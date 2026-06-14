@@ -1,0 +1,6 @@
+interval: 60
+
+webhooks:
+  discord:
+    - url: https://discord.com/api/webhooks/...
+      msg: ""

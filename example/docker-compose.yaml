@@ -1,0 +1,13 @@
+services:
+  yt-auth-notification:
+    image: ghcr.io/hitomarukonpaku/yt-auth-notification
+    restart: unless-stopped
+    ports:
+      - 8080:8080
+    environment:
+      TZ: Asia/Tokyo
+      NOTIFICATION_NEXT: 0
+    volumes:
+      - ./cookies.txt:/cookies.txt:ro
+      - ./config.yaml:/config.yaml:ro
+      - ./data:/data
