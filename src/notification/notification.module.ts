@@ -1,10 +1,11 @@
 import { Global, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Notification } from '../db/notification.entity';
+import { DiscordModule } from '../discord/discord.module';
+import { YoutubeModule } from '../youtube/youtube.module';
+import { NotificationRepo } from './notification.repo';
 import { NotificationService } from './notification.service';
 import { PollingService } from './polling.service';
-import { YoutubeModule } from '../youtube/youtube.module';
-import { DiscordModule } from '../discord/discord.module';
 
 @Global()
 @Module({
@@ -14,10 +15,12 @@ import { DiscordModule } from '../discord/discord.module';
     DiscordModule,
   ],
   providers: [
+    NotificationRepo,
     NotificationService,
     PollingService,
   ],
   exports: [
+    NotificationRepo,
     NotificationService,
   ],
 })
