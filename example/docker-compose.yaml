@@ -1,5 +1,6 @@
 services:
   yt-auth-notification:
+    container_name: yt-auth-notification
     image: ghcr.io/hitomarukonpaku/yt-auth-notification
     restart: unless-stopped
     ports:

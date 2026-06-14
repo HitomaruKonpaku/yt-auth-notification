@@ -1,10 +1,10 @@
 import { Controller, Get, Query, Res } from '@nestjs/common';
 import { Response } from 'express';
-import { NotificationService } from '../notification/notification.service';
-import { buildYtEndpointUrl } from '../common/link-builder';
+import { readFileSync } from 'fs';
 import { DateTime } from 'luxon';
 import { join } from 'path';
-import { readFileSync } from 'fs';
+import { buildYtEndpointUrl } from '../common/link-builder';
+import { NotificationService } from '../notification/notification.service';
 
 @Controller()
 export class DisplayController {

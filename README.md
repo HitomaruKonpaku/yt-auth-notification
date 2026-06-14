@@ -21,7 +21,7 @@ Open `http://localhost:8080` to see the notification feed.
 | `COOKIE_FILE` | — | **Yes** | Path to Netscape-format YouTube cookies file |
 | `CONFIG_FILE` | `config.yaml` | No | Path to config YAML file |
 | `DATA_DIR` | `./data` | No | Data directory (database stored as `{DATA_DIR}/database.sqlite`) |
-| `NOTIFICATION_NEXT` | `0` | No | Continuation pages: `0` = single page, `-1` = all pages, `>0` = N extra pages |
+| `NOTIFICATION_NEXT` | `0` | No | Continuation pages: `0` = single page, `<0` = all pages, `>0` = N extra pages |
 
 ## Configuration (`config.yaml`)
 
