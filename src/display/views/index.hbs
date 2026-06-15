@@ -10,9 +10,9 @@
   <div class="header">
     <div class="container header-inner">
       <a href="/" class="title-link"><h1>YouTube Notifications</h1></a>
-      <button id="notifToggle" class="notif-btn" onclick="toggleNotif()"></button>
-      <select id="limitSelect" class="limit-select" onchange="changeLimit(this.value)"></select>
-      <button id="newIndicatorBtn" class="new-indicator-btn" title="New notifications" onclick="goTo(0)"><span id="newIndicator" class="new-indicator"></span></button>
+      <button id="notifToggle" class="notif-btn" onclick="app.toggleNotif()"></button>
+      <select id="limitSelect" class="limit-select" onchange="app.changeLimit(this.value)"></select>
+      <button id="newIndicatorBtn" class="new-indicator-btn" title="New notifications" onclick="app.goTo(0)"><span id="newIndicator" class="new-indicator"></span></button>
     </div>
   </div>
 
