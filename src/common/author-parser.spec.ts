@@ -11,6 +11,16 @@ describe('parseAuthorName', () => {
       .toBe('SomeUser');
   });
 
+  it('should extract @handle from "got a ❤ from @handle" pattern', () => {
+    expect(parseAuthorName('Your comment got a ❤ from @tsuna_nekota!'))
+      .toBe('@tsuna_nekota');
+  });
+
+  it('should extract @handle from "@handle pinned your comment" pattern', () => {
+    expect(parseAuthorName('@Linsaloty pinned your comment.'))
+      .toBe('@Linsaloty');
+  });
+
   it('should extract name before " is live:"', () => {
     expect(parseAuthorName('Rica Ch. / 花宮莉歌 is live: 【実写カメラ】'))
       .toBe('Rica Ch. / 花宮莉歌');
