@@ -4,7 +4,7 @@ import { NotificationRepo } from './notification.repo';
 
 describe('NotificationService', () => {
   let service: NotificationService;
-  let repo: { exists: jest.Mock; insert: jest.Mock; count: jest.Mock; findAll: jest.Mock };
+  let repo: { findExistingIds: jest.Mock; insert: jest.Mock; count: jest.Mock; findAll: jest.Mock };
 
   const makeRaw = (id: string, text: string) => ({
     notification_id: id,
@@ -14,7 +14,7 @@ describe('NotificationService', () => {
   });
 
   beforeEach(async () => {
-    repo = { exists: jest.fn(), insert: jest.fn().mockResolvedValue(undefined), count: jest.fn(), findAll: jest.fn() };
+    repo = { findExistingIds: jest.fn(), insert: jest.fn().mockResolvedValue(undefined), count: jest.fn(), findAll: jest.fn() };
     const module: TestingModule = await Test.createTestingModule({
       providers: [NotificationService, { provide: NotificationRepo, useValue: repo }],
     }).compile();
@@ -22,7 +22,7 @@ describe('NotificationService', () => {
   });
 
   it('should extract and return new notifications only', async () => {
-    repo.exists.mockResolvedValue(false);
+    repo.findExistingIds.mockResolvedValue(new Set());
     repo.count.mockResolvedValue(0);
     const result = await service.processNotifications([makeRaw('1', 'Test'), makeRaw('2', 'Another')] as any);
     expect(result).toHaveLength(2);
@@ -31,7 +31,7 @@ describe('NotificationService', () => {
   });
 
   it('should skip existing notifications', async () => {
-    repo.exists.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
+    repo.findExistingIds.mockResolvedValue(new Set(['1']));
     repo.count.mockResolvedValue(1);
     const result = await service.processNotifications([makeRaw('1', 'Old'), makeRaw('2', 'New')] as any);
     expect(result).toHaveLength(1);
@@ -39,7 +39,7 @@ describe('NotificationService', () => {
   });
 
   it('should handle missing optional fields', async () => {
-    repo.exists.mockResolvedValue(false);
+    repo.findExistingIds.mockResolvedValue(new Set());
     repo.count.mockResolvedValue(0);
     const raw = [{ notification_id: '1000', short_message: { text: 'Minimal', rtl: false }, thumbnails: [], endpoint: { metadata: {}, payload: {} } }];
     const result = await service.processNotifications(raw as any);
@@ -49,7 +49,7 @@ describe('NotificationService', () => {
   });
 
   it('should extract linked_comment_id from comment notifications', async () => {
-    repo.exists.mockResolvedValue(false);
+    repo.findExistingIds.mockResolvedValue(new Set());
     repo.count.mockResolvedValue(0);
     const raw = [{ notification_id: '5000', short_message: { text: 'Comment', rtl: false }, thumbnails: [], endpoint: { metadata: { url: '/watch?v=vid' }, payload: { videoId: 'vid', linkedCommentId: 'lc123' } } }];
     const result = await service.processNotifications(raw as any);

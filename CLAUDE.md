@@ -5,16 +5,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Build, test, run
 
 ```
-npx nest build          # TypeScript compile
-npm run start:dev       # http://localhost:8080
-npx jest                # all unit tests (38 tests, 9 suites)
+npm run build           # npx nest build
+npm run start:dev       # http://localhost:8080 (watch mode)
+npm run start:prod      # node dist/main
+npm test                # all unit tests (9 suites)
 npx jest path/to/file.spec.ts   # single test file
-npx jest --config ./test/jest-e2e.json   # e2e
+npm run test:e2e        # e2e
 ```
 
 ## Architecture
 
 NestJS 11 app with five modules. All modules are `@Global()` — no need to import them unless you need the types.
+
+**Five modules (all `@Global()`):** `ConfigModule` (YAML config), `YoutubeModule` (Innertube session + cookie parsing), `NotificationModule` (poll loop, processing, repo), `DiscordModule` (webhook relay), `DisplayModule` (web dashboard + JSON API).
 
 **Data flow:** `main.ts` boots → `app.listen()` → `PollingService.startPolling()` → `YTProvider.getYt()` creates Innertube session → `poll()` calls `yt.getNotifications()` (and optionally `page.getContinuation()` for pagination) → `NotificationService.processNotifications()` dedupes by ID, inserts via TypeORM → new items relayed to `DiscordService` → embed posted to each configured webhook.
 
@@ -26,6 +29,7 @@ NestJS 11 app with five modules. All modules are `@Global()` — no need to impo
 
 ## Key details
 
+- `main.ts` respects `HOST` (default `localhost`) and `PORT` (default `8080`) env vars.
 - `YTProvider` watches the cookie file (`fs.watchFile`, 30s interval) and invalidates the Innertube cache when the file changes — no restart needed.
 - `youtubei.js` v17 is ESM-only. Jest can't parse it, so `jest.config.js` maps `youtubei.js` → `src/test-mocks/youtubei.js.mock.ts`.
 - `tsconfig.json` has `strictPropertyInitialization: false` (needed for TypeORM entity columns).

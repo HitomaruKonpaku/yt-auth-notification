@@ -24,11 +24,17 @@ describe('NotificationRepo', () => {
     repo = module.get<NotificationRepo>(NotificationRepo);
   });
 
-  it('should check existence by id', async () => {
-    mockRepo.count.mockResolvedValue(0);
-    expect(await repo.exists('123')).toBe(false);
-    mockRepo.count.mockResolvedValue(1);
-    expect(await repo.exists('123')).toBe(true);
+  it('should find existing IDs in bulk', async () => {
+    mockRepo.find.mockResolvedValue([{ id: 'a' }, { id: 'c' }]);
+    const result = await repo.findExistingIds(['a', 'b', 'c']);
+    expect(result).toEqual(new Set(['a', 'c']));
+    expect(mockRepo.find).toHaveBeenCalledWith({ select: { id: true }, where: { id: expect.any(Object) } });
+  });
+
+  it('should return empty set for empty input', async () => {
+    const result = await repo.findExistingIds([]);
+    expect(result).toEqual(new Set());
+    expect(mockRepo.find).not.toHaveBeenCalled();
   });
 
   it('should insert a notification', async () => {

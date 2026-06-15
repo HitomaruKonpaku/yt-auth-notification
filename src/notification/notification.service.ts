@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { YTNodes } from 'youtubei.js';
 import { NotificationRepo } from './notification.repo';
+import type { NotificationLike } from '../discord/discord.interface';
 
 @Injectable()
 export class NotificationService {
@@ -9,11 +10,13 @@ export class NotificationService {
   constructor(private readonly repo: NotificationRepo) { }
 
   async processNotifications(raw: YTNodes.Notification[]) {
-    const newItems = [];
+    const ids = raw.map(n => n.notification_id);
+    const existingIds = await this.repo.findExistingIds(ids);
+    const newItems: NotificationLike[] = [];
 
     for (const n of raw) {
       const id = n.notification_id;
-      if (await this.repo.exists(id)) {
+      if (existingIds.has(id)) {
         continue;
       }
 

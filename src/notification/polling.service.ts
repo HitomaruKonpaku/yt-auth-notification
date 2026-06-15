@@ -51,7 +51,7 @@ export class PollingService {
       // On first poll after boot, fetch continuation pages
       if (this.isFirstPoll) {
         this.isFirstPoll = false;
-        const next = Number(process.env.NOTIFICATION_NEXT ?? '0');
+        const next = parseInt(process.env.NOTIFICATION_NEXT ?? '0', 10) || 0;
         if (next < 0) {
           let page = menu;
           while (page.contents.length > 0) {

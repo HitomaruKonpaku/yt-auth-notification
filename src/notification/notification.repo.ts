@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Notification } from '../db/notification.entity';
 import type { PaginationOpts } from '../common/pagination';
 
@@ -11,9 +11,12 @@ export class NotificationRepo {
     private readonly repo: Repository<Notification>,
   ) { }
 
-  async exists(id: string): Promise<boolean> {
-    const count = await this.repo.count({ where: { id } });
-    return count > 0;
+  async findExistingIds(ids: string[]): Promise<Set<string>> {
+    if (ids.length === 0) {
+      return new Set();
+    }
+    const rows = await this.repo.find({ select: { id: true }, where: { id: In(ids) } });
+    return new Set(rows.map(r => r.id));
   }
 
   async insert(row: Partial<Notification>): Promise<void> {
