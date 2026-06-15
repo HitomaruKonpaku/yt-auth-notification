@@ -20,6 +20,7 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background: var(--bg);
   color: var(--text);
+  overflow-y: scroll;
 }
 
 /* --- layout --- */
@@ -79,6 +80,7 @@ h1 { font-size: 20px; color: var(--text-white); }
   cursor: pointer; flex-shrink: 0; padding: 0; margin-left: auto;
 }
 .new-indicator-btn:hover { background: var(--accent-hover-bg); }
+.new-indicator-btn.active { border-color: var(--green); }
 
 .new-indicator {
   width: 10px; height: 10px; border-radius: 50%;

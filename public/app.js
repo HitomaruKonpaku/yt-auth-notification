@@ -122,6 +122,7 @@
   async function goTo(offset) {
     state.offset = Math.max(0, offset);
     document.getElementById('newIndicator').classList.remove('active');
+    document.getElementById('newIndicatorBtn').classList.remove('active');
     localStorage.setItem(config.storageKeys.limit, state.limit);
     var url = new URL(window.location);
     if (state.limit !== config.defaultLimit) url.searchParams.set('limit', state.limit);
@@ -171,6 +172,7 @@
         if (newItems.length > 0) {
           state.latestId = newItems[0].id;
           document.getElementById('newIndicator').classList.add('active');
+          document.getElementById('newIndicatorBtn').classList.add('active');
           var audio = new Audio('/se_chat_announce.ogg');
           audio.play().catch(function () { /* autoplay blocked */ });
           if ('Notification' in window && Notification.permission === 'granted') {
