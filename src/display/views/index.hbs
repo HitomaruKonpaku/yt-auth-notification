@@ -35,6 +35,8 @@
     .spinner { display: flex; justify-content: center; padding: 40px; }
     .spinner::after { content: ''; width: 24px; height: 24px; border: 2px solid #333; border-top-color: #3ea6ff; border-radius: 50%; animation: spin 0.6s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
+    .new-indicator { width: 10px; height: 10px; border-radius: 50%; background: #555; flex-shrink: 0; margin-left: auto; cursor: pointer; transition: background 0.3s ease; }
+    .new-indicator.active { background: #4caf50; box-shadow: 0 0 8px #4caf50; }
   </style>
 </head>
 <body>
@@ -42,6 +44,7 @@
     <div class="container header-inner">
       <a href="/" class="title-link"><h1>YouTube Notifications</h1></a>
       <button id="notifToggle" class="notif-btn" onclick="toggleNotif()"></button>
+      <span id="newIndicator" class="new-indicator" title="New notifications" onclick="goTo(0)"></span>
     </div>
   </div>
 
@@ -165,6 +168,7 @@
 
     async function goTo(offset) {
       state.offset = Math.max(0, offset);
+      document.getElementById('newIndicator').classList.remove('active');
       var url = new URL(window.location);
       url.searchParams.set('limit', state.limit);
       url.searchParams.set('offset', state.offset);
@@ -212,6 +216,7 @@
           }
           if (newItems.length > 0) {
             state.latestId = newItems[0].id;
+            document.getElementById('newIndicator').classList.add('active');
             var audio = new Audio('/se_chat_announce.ogg');
             audio.play().catch(function () { /* autoplay blocked */ });
             if ('Notification' in window && Notification.permission === 'granted') {
