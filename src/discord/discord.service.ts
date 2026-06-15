@@ -16,7 +16,7 @@ export class DiscordService {
 
     for (const webhook of webhooks) {
       try {
-        const body: Record<string, unknown> = { embeds: [embed] };
+        const body: Record<string, any> = { embeds: [embed] };
         if (webhook.msg && webhook.msg.length > 0) {
           body.content = webhook.msg;
         }
@@ -43,17 +43,18 @@ export class DiscordService {
     const text: string = shortMsg.text || '';
     const authorName = parseAuthorName(text);
 
-    const embed: Record<string, unknown> = {
+    const embed: Record<string, any> = {
       author: { name: authorName },
     };
 
     if (notif.thumbnail_url) {
-      (embed.author as any).icon_url = notif.thumbnail_url;
+      embed.author.icon_url = notif.thumbnail_url;
     }
 
+    embed.description = notif.short_message.text;
     const url = buildYtEndpointUrl(notif);
     if (url) {
-      embed.description = url;
+      embed.description += `\n${url}`;
     }
 
     embed.timestamp = new Date(notif.sent_at).toISOString();

@@ -13,7 +13,9 @@ export function buildYtEndpointUrl(opts: YoutubeLinkParams): string | null {
     return `https://youtube.com/watch?v=${opts.video_id}&lc=${opts.linked_comment_id}`;
   }
   if (opts.endpoint_url) {
-    return `https://youtube.com${opts.endpoint_url}`;
+    const url = new URL(opts.endpoint_url, 'https://youtube.com');
+    url.searchParams.delete('pp');
+    return url.toString();
   }
   return null;
 }
