@@ -60,6 +60,18 @@ Both `interval` and `webhooks.discord` are optional — defaults to 60s polling 
 }
 ```
 
+## Docker
+
+See [example/docker-compose.yaml](example/docker-compose.yaml) for a ready-to-run Compose file.
+
+```bash
+cp example/docker-compose.yaml docker-compose.yaml
+cp example/config.yaml config.yaml         # edit webhook URLs
+cp example/cookies.txt cookies.txt         # add your cookies
+mkdir data
+docker compose up -d
+```
+
 ## Getting YouTube Cookies
 
 1. Install a browser extension like [Get cookies.txt LOCALLY](https://chromewebstore.google.com/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc)
