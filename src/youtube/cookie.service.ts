@@ -12,9 +12,11 @@ export class CookieService extends EventEmitter {
     const cookieFile = process.env.COOKIE_FILE;
     if (cookieFile) {
       this.logger.log(`Watching cookie file: ${cookieFile}`);
-      fs.watchFile(cookieFile, { interval: 30000 }, () => {
-        this.logger.log('Cookie file changed');
-        this.emit('changed');
+      fs.watch(cookieFile, (eventType) => {
+        if (eventType === 'change') {
+          this.logger.log('Cookie file changed');
+          this.emit('changed');
+        }
       });
     }
   }

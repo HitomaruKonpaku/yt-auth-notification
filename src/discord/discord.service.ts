@@ -45,6 +45,7 @@ export class DiscordService {
 
     const embed: Record<string, any> = {
       author: { name: authorName },
+      color: 0xff0000,
     };
 
     if (notif.thumbnail_url) {

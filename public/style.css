@@ -45,14 +45,22 @@ body {
 
 .header-inner { display: flex; align-items: center; gap: 12px; width: 100%; }
 
-.title-link { text-decoration: none; color: inherit; }
+.title-link {
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid transparent; border-radius: 50%;
+  text-decoration: none; color: var(--accent);
+  transition: 0.15s; flex-shrink: 0;
+}
+.title-link:hover { background: var(--accent-hover-bg); }
+.title-link svg { width: 32px; height: 32px; }
 
 h1 { font-size: 20px; color: var(--text-white); }
 
 /* --- notif toggle button --- */
 
 .notif-btn {
-  font-size: 12px; padding: 4px 10px;
+  font-size: 12px; padding: 4px 10px; height: 26px; box-sizing: border-box;
   border: 1px solid var(--accent); border-radius: 4px;
   background: transparent; color: var(--accent);
   cursor: pointer; white-space: nowrap; min-width: 110px; text-align: center;
@@ -68,9 +76,10 @@ h1 { font-size: 20px; color: var(--text-white); }
 /* --- limit select --- */
 
 .limit-select {
-  font-size: 12px; padding: 4px 6px;
+  font-size: 12px; padding: 0 6px; height: 26px; box-sizing: border-box;
   border: 1px solid var(--accent); border-radius: 4px;
   background: transparent; color: var(--accent); cursor: pointer;
+  text-align: right;
 }
 .limit-select option { background: var(--bg); color: var(--text); }
 
