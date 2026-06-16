@@ -79,7 +79,6 @@ h1 { font-size: 20px; color: var(--text-white); }
   font-size: 12px; padding: 0 6px; height: 26px; box-sizing: border-box;
   border: 1px solid var(--accent); border-radius: 4px;
   background: transparent; color: var(--accent); cursor: pointer;
-  text-align: right;
 }
 .limit-select option { background: var(--bg); color: var(--text); }
 
