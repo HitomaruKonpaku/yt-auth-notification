@@ -1,13 +1,20 @@
-import 'dotenv/config';
-import { Logger } from '@nestjs/common';
+import { ConsoleLogger, Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { DateTime } from 'luxon';
+import 'dotenv/config';
 import { join } from 'path';
 import { AppModule } from './app.module';
-import { PollingService } from './notification/polling.service';
+import { PollingService } from './polling/polling.service';
+
+class FmtLogger extends ConsoleLogger {
+  protected getTimestamp(): string {
+    return DateTime.now().toFormat('yyyy-MM-dd HH:mm:ss.SSS');
+  }
+}
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { logger : new FmtLogger()});
   const logger = new Logger('Bootstrap');
 
   app.useStaticAssets(join(process.cwd(), 'public'));

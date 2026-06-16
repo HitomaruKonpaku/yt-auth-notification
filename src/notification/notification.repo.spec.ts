@@ -10,7 +10,7 @@ describe('NotificationRepo', () => {
   beforeEach(async () => {
     mockRepo = {
       count: jest.fn(),
-      insert: jest.fn(),
+      upsert: jest.fn(),
       find: jest.fn(),
     };
 
@@ -37,12 +37,6 @@ describe('NotificationRepo', () => {
     expect(mockRepo.find).not.toHaveBeenCalled();
   });
 
-  it('should insert a notification', async () => {
-    const row = { id: '1', created_at: 1, sent_at: 1, short_message: { text: '', rtl: false } };
-    await repo.insert(row);
-    expect(mockRepo.insert).toHaveBeenCalledWith(row);
-  });
-
   it('should find all ordered by sent_at desc', async () => {
     mockRepo.find.mockResolvedValue([{ id: '2' }, { id: '1' }]);
     const result = await repo.findAll({ limit: 10, offset: 0 });
@@ -58,5 +52,38 @@ describe('NotificationRepo', () => {
   it('should count total rows', async () => {
     mockRepo.count.mockResolvedValue(42);
     expect(await repo.count()).toBe(42);
+  });
+
+  it('should upsert all rows and return only new IDs', async () => {
+    mockRepo.find.mockResolvedValue([{ id: 'a' }]); // 'a' exists, 'b' is new
+
+    const result = await repo.upsertAll([
+      { id: 'a', created_at: 1, sent_at: 1, short_message: { text: 'old', rtl: false } } as any,
+      { id: 'b', created_at: 2, sent_at: 2, short_message: { text: 'new', rtl: false } } as any,
+    ]);
+
+    expect(result).toEqual(['b']); // only 'b' is new
+    expect(mockRepo.find).toHaveBeenCalledTimes(1);
+    expect(mockRepo.upsert).toHaveBeenCalledTimes(1);
+    expect(mockRepo.upsert).toHaveBeenCalledWith(expect.any(Array), {
+      conflictPaths: ['id'],
+      skipUpdateIfNoValuesChanged: true,
+    });
+  });
+
+  it('should return all IDs as new when no existing rows', async () => {
+    mockRepo.find.mockResolvedValue([]);
+    const result = await repo.upsertAll([
+      { id: 'x', created_at: 1, sent_at: 1, short_message: { text: '', rtl: false } } as any,
+      { id: 'y', created_at: 2, sent_at: 2, short_message: { text: '', rtl: false } } as any,
+    ]);
+    expect(result).toEqual(['x', 'y']);
+  });
+
+  it('should return empty array for empty input', async () => {
+    const result = await repo.upsertAll([]);
+    expect(result).toEqual([]);
+    expect(mockRepo.find).not.toHaveBeenCalled();
+    expect(mockRepo.upsert).not.toHaveBeenCalled();
   });
 });

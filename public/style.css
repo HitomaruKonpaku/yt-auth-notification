@@ -54,6 +54,7 @@ h1 { font-size: 20px; color: var(--text-white); }
   border: 1px solid var(--accent); border-radius: 4px;
   background: transparent; color: var(--accent);
   cursor: pointer; white-space: nowrap; min-width: 110px; text-align: center;
+  transition: 0.15s;
 }
 .notif-btn:hover { background: var(--accent-hover-bg); }
 
@@ -76,8 +77,9 @@ h1 { font-size: 20px; color: var(--text-white); }
 .new-indicator-btn {
   width: 36px; height: 36px;
   display: flex; align-items: center; justify-content: center;
-  background: transparent; border: 1px solid var(--accent); border-radius: 50%;
+  background: transparent; border: 1px solid transparent; border-radius: 50%;
   cursor: pointer; flex-shrink: 0; padding: 0; margin-left: auto;
+  transition: 0.15s;
 }
 .new-indicator-btn:hover { background: var(--accent-hover-bg); }
 .new-indicator-btn.active { border-color: var(--green); }
@@ -104,7 +106,7 @@ h1 { font-size: 20px; color: var(--text-white); }
   padding: 10px 12px;
   border-bottom: 1px solid var(--border);
   text-decoration: none; color: inherit;
-  transition: background 0.15s ease;
+  transition: 0.15s;
 }
 .notification:hover { background: var(--hover-bg); }
 
@@ -136,7 +138,9 @@ h1 { font-size: 20px; color: var(--text-white); }
   border: 1px solid var(--accent); border-radius: 4px;
   cursor: pointer; font-size: 16px; width: 36px; height: 36px;
   display: flex; align-items: center; justify-content: center;
+  transition: 0.15s;
 }
+.pagination button:hover:not(:disabled) { background: var(--accent-hover-bg); }
 .pagination button:disabled { color: var(--text-disabled); border-color: var(--text-disabled); cursor: default; }
 
 .pagination span { color: var(--text-muted); font-size: 13px; min-width: 140px; text-align: center; }

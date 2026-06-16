@@ -19,8 +19,20 @@ export class NotificationRepo {
     return new Set(rows.map(r => r.id));
   }
 
-  async insert(row: Partial<Notification>): Promise<void> {
-    await this.repo.insert(row);
+  async upsertAll(rows: Partial<Notification>[]): Promise<string[]> {
+    if (rows.length === 0) {
+      return [];
+    }
+
+    const ids = rows.map(r => r.id!);
+    const existingIds = await this.findExistingIds(ids);
+
+    await this.repo.upsert(rows, {
+      conflictPaths: ['id'],
+      skipUpdateIfNoValuesChanged: true,
+    });
+
+    return ids.filter(id => !existingIds.has(id));
   }
 
   async findAll(opts: PaginationOpts): Promise<Notification[]> {

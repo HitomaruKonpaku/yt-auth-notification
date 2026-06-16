@@ -9,32 +9,21 @@ export class NotificationService {
 
   constructor(private readonly repo: NotificationRepo) { }
 
-  async processNotifications(raw: YTNodes.Notification[]) {
-    const ids = raw.map(n => n.notification_id);
-    const existingIds = await this.repo.findExistingIds(ids);
-    const newItems: NotificationLike[] = [];
+  async processNotifications(raw: YTNodes.Notification[], ownerId: string | null) {
+    const rows: NotificationLike[] = raw.map(n => ({
+      id: n.notification_id,
+      created_at: Date.now(),
+      sent_at: Math.trunc(Number(n.notification_id) / 1000),
+      owner_id: ownerId,
+      video_id: n.endpoint.payload?.videoId,
+      linked_comment_id: n.endpoint.payload?.linkedCommentId,
+      endpoint_url: n.endpoint.metadata.url,
+      short_message: { text: n.short_message.text ?? '', rtl: n.short_message.rtl },
+      thumbnail_url: n.thumbnails[0]?.url,
+    }));
 
-    for (const n of raw) {
-      const id = n.notification_id;
-      if (existingIds.has(id)) {
-        continue;
-      }
-
-      const now = Date.now();
-      const row = {
-        id,
-        created_at: now,
-        sent_at: Math.trunc(Number(id) / 1000),
-        video_id: n.endpoint.payload?.videoId,
-        linked_comment_id: n.endpoint.payload?.linkedCommentId,
-        endpoint_url: n.endpoint.metadata.url,
-        short_message: { text: n.short_message.text ?? '', rtl: n.short_message.rtl },
-        thumbnail_url: n.thumbnails[0]?.url,
-      };
-
-      await this.repo.insert(row);
-      newItems.push(row);
-    }
+    const insertedIds = await this.repo.upsertAll(rows);
+    const newItems = rows.filter(r => insertedIds.includes(r.id));
 
     if (newItems.length > 0) {
       this.logger.log(`Inserted ${newItems.length} new notifications`);

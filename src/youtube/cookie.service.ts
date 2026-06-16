@@ -1,10 +1,23 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as fs from 'fs';
+import { EventEmitter } from 'events';
 import { CookieJar } from 'netscape-cookies-parser';
 
 @Injectable()
-export class CookieService {
+export class CookieService extends EventEmitter {
   private readonly logger = new Logger(CookieService.name);
+
+  constructor() {
+    super();
+    const cookieFile = process.env.COOKIE_FILE;
+    if (cookieFile) {
+      this.logger.log(`Watching cookie file: ${cookieFile}`);
+      fs.watchFile(cookieFile, { interval: 30000 }, () => {
+        this.logger.log('Cookie file changed');
+        this.emit('changed');
+      });
+    }
+  }
 
   getCookieString(): string {
     const cookieFile = process.env.COOKIE_FILE;

@@ -1,14 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { YT, YTNodes } from 'youtubei.js';
+import { ChannelService } from '../channel/channel.service';
 import { ConfigService } from '../config/config.service';
 import { DiscordService } from '../discord/discord.service';
-import { NotificationService } from './notification.service';
+import { NotificationService } from '../notification/notification.service';
 import { YTProvider } from '../youtube/yt.provider';
 
 @Injectable()
 export class PollingService {
   private readonly logger = new Logger(PollingService.name);
-
   private static readonly MAX_BACKOFF_MS = 30 * 60 * 1000;
 
   private isFirstPoll = true;
@@ -20,6 +20,7 @@ export class PollingService {
     private readonly ytProvider: YTProvider,
     private readonly notificationService: NotificationService,
     private readonly discordService: DiscordService,
+    private readonly channelService: ChannelService,
   ) {
     this.currentWaitMs = this.getIntervalMs();
   }
@@ -41,9 +42,11 @@ export class PollingService {
     try {
       const yt = await this.ytProvider.getYt();
 
+      const ownerId = await this.channelService.ensureChannel(yt);
+
       this.logger.debug('yt.getNotifications()');
       const menu: YT.NotificationsMenu = await yt.getNotifications();
-      this.logger.debug(`  -> ${menu.contents.length} items`);
+      this.logger.debug(`  -> ${JSON.stringify({ count: menu.contents.length })}`);
 
       const contents: YTNodes.Notification[] = [...menu.contents];
       let pages = 1;
@@ -58,7 +61,7 @@ export class PollingService {
             try {
               this.logger.debug(`page.getContinuation() [${pages}]`);
               page = await page.getContinuation();
-              this.logger.debug(`  -> ${page.contents.length} items`);
+              this.logger.debug(`  -> ${JSON.stringify({ count: page.contents.length })}`);
               contents.push(...page.contents);
               pages++;
             } catch {
@@ -71,7 +74,7 @@ export class PollingService {
             try {
               this.logger.debug(`page.getContinuation() [${i + 1}]`);
               page = await page.getContinuation();
-              this.logger.debug(`  -> ${page.contents.length} items`);
+              this.logger.debug(`  -> ${JSON.stringify({ count: page.contents.length })}`);
               contents.push(...page.contents);
               pages++;
             } catch {
@@ -83,7 +86,7 @@ export class PollingService {
 
       this.logger.log(`Total: ${contents.length} notifications (${pages} page(s))`);
 
-      const newItems = await this.notificationService.processNotifications(contents);
+      const newItems = await this.notificationService.processNotifications(contents, ownerId);
 
       for (const item of newItems) {
         await this.discordService.relayNotification(item);

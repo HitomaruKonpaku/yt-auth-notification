@@ -11,14 +11,17 @@ export class Notification {
   @PrimaryColumn('text')
   id: string;
 
-  @Column('integer')
-  created_at: number;
+  @Column('integer', { nullable: true })
+  created_at?: number;
 
   @Column('integer', { nullable: true })
   updated_at?: number;
 
   @Column('integer')
   sent_at: number;
+
+  @Column('text', { nullable: true })
+  owner_id?: string;
 
   @Column('text', { nullable: true })
   video_id?: string;

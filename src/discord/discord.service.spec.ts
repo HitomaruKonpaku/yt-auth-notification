@@ -56,7 +56,7 @@ describe('DiscordService', () => {
     } as any);
 
     const body = JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body);
-    expect(body.embeds[0].description).toBe('https://youtube.com/watch?v=vid&lc=lc456');
+    expect(body.embeds[0].description).toBe('x\nhttps://youtube.com/watch?v=vid&lc=lc456');
   });
 
   it('should skip webhooks that fail and continue', async () => {
