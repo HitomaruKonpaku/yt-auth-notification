@@ -1,9 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { YTNodes } from 'youtubei.js';
 import { decodePostParams } from '../common/params-parser';
-import type { NotificationLike } from '../discord/discord.interface';
+import type { NotificationLike } from './notification.interface';
 import { PostRepo } from '../post/post.repo';
+import { SseService } from '../sse/sse.service';
 import { NotificationRepo } from './notification.repo';
+import { enrichNotification } from './notification.util';
 
 @Injectable()
 export class NotificationService {
@@ -12,6 +14,7 @@ export class NotificationService {
   constructor(
     private readonly repo: NotificationRepo,
     private readonly postRepo: PostRepo,
+    private readonly sseService: SseService,
   ) { }
 
   async processNotifications(raw: YTNodes.Notification[], ownerId?: string) {
@@ -23,8 +26,8 @@ export class NotificationService {
         sent_at: Math.trunc(Number(n.notification_id) / 1000),
         owner_id: ownerId,
         video_id: n.endpoint.payload?.videoId,
-        linked_comment_id: n.endpoint.payload?.linkedCommentId,
         post_id: undefined,
+        linked_comment_id: n.endpoint.payload?.linkedCommentId,
         endpoint_url: n.endpoint.metadata.url,
         short_message: { text: n.short_message.text ?? '', rtl: n.short_message.rtl },
         thumbnail_url: n.thumbnails[0]?.url,
@@ -40,6 +43,12 @@ export class NotificationService {
 
     if (newItems.length > 0) {
       this.logger.log(`Inserted ${newItems.length} new notifications`);
+    }
+
+    for (const item of newItems) {
+      this.sseService.push('notification.new', {
+        item: enrichNotification(item),
+      });
     }
 
     return newItems;

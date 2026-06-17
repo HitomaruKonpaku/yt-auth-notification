@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ChannelModule } from './channel/channel.module';
 import { ConfigModule } from './config/config.module';
+import { SseModule } from './sse/sse.module';
 import { Channel } from './db/channel.entity';
 import { Notification } from './db/notification.entity';
 import { Post } from './db/post.entity';
@@ -26,6 +27,7 @@ import { YoutubeModule } from './youtube/youtube.module';
     }),
 
     ConfigModule,
+    SseModule,
     PollingModule,
 
     // youtube

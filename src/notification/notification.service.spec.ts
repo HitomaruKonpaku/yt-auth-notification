@@ -2,11 +2,13 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotificationService } from './notification.service';
 import { NotificationRepo } from './notification.repo';
 import { PostRepo } from '../post/post.repo';
+import { SseService } from '../sse/sse.service';
 
 describe('NotificationService', () => {
   let service: NotificationService;
   let repo: { upsertAll: jest.Mock; count: jest.Mock; findAll: jest.Mock };
   let postRepo: { upsert: jest.Mock };
+  let sseService: { push: jest.Mock; subject: { next: jest.Mock } };
 
   const makeRaw = (id: string, text: string, opts?: { videoId?: string; linkedCommentId?: string; browseId?: string; params?: string }) => ({
     notification_id: id,
@@ -28,11 +30,13 @@ describe('NotificationService', () => {
   beforeEach(async () => {
     repo = { upsertAll: jest.fn().mockResolvedValue([]), count: jest.fn(), findAll: jest.fn() };
     postRepo = { upsert: jest.fn() };
+    sseService = { push: jest.fn(), subject: { next: jest.fn() } };
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         NotificationService,
         { provide: NotificationRepo, useValue: repo },
         { provide: PostRepo, useValue: postRepo },
+        { provide: SseService, useValue: sseService },
       ],
     }).compile();
     service = module.get<NotificationService>(NotificationService);
@@ -126,5 +130,28 @@ describe('NotificationService', () => {
     const result = await service.getNotifications(10, 0);
     expect(result.total).toBe(42);
     expect(result.items).toHaveLength(1);
+  });
+
+  it('should push new items to SSE with enriched fields', async () => {
+    repo.upsertAll.mockResolvedValue(['1']);
+    const raw = [makeRaw('1', 'SSE test', { videoId: 'vid123' })];
+    const result = await service.processNotifications(raw as any, 'UC123');
+    expect(result).toHaveLength(1);
+    expect(sseService.push).toHaveBeenCalledTimes(1);
+    expect(sseService.push).toHaveBeenCalledWith('notification.new', expect.objectContaining({
+      item: expect.objectContaining({
+        id: '1',
+        _linkUrl: expect.any(String),
+        _sentFormatted: expect.any(String),
+        _sentAbsolute: expect.any(String),
+      }),
+    }));
+  });
+
+  it('should not push when there are no new items', async () => {
+    repo.upsertAll.mockResolvedValue([]);
+    const raw = [makeRaw('1', 'Old')];
+    await service.processNotifications(raw as any, 'UC123');
+    expect(sseService.push).not.toHaveBeenCalled();
   });
 });

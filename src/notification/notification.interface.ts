@@ -1,4 +1,7 @@
-import type { ShortMessage } from '../db/db.interface';
+export interface ShortMessage {
+  text: string;
+  rtl: boolean;
+}
 
 export interface NotificationLike {
   id: string;

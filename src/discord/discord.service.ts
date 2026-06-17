@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '../config/config.service';
 import { parseAuthorName } from '../common/author-parser';
 import { buildYtVideoThumbnailUrl, buildYtEndpointUrl } from '../common/link-builder';
-import type { NotificationLike } from './discord.interface';
+import type { NotificationLike } from '../notification/notification.interface';
 
 @Injectable()
 export class DiscordService {

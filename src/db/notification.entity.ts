@@ -1,5 +1,5 @@
 import { Column, Entity, PrimaryColumn } from 'typeorm';
-import type { ShortMessage } from './db.interface';
+import type { ShortMessage } from '../notification/notification.interface';
 import { jsonTransformer } from '../common/json-transformer';
 
 @Entity('notification')

@@ -1,16 +1,21 @@
-import { Controller, Get, Query, Res } from '@nestjs/common';
+import { Controller, Get, Query, Res, Sse } from '@nestjs/common';
 import { Response } from 'express';
 import { readFileSync } from 'fs';
-import { DateTime } from 'luxon';
 import { join } from 'path';
-import { buildYtEndpointUrl } from '../common/link-builder';
+import { Observable } from 'rxjs';
 import { NotificationService } from '../notification/notification.service';
+import { enrichNotification } from '../notification/notification.util';
+import type { SseEvent } from '../sse/sse.interface';
+import { SseService } from '../sse/sse.service';
 
 @Controller()
 export class DisplayController {
   private indexHtml: string;
 
-  constructor(private readonly notificationService: NotificationService) {
+  constructor(
+    private readonly sseService: SseService,
+    private readonly notificationService: NotificationService,
+  ) {
     this.indexHtml = readFileSync(join(__dirname, 'views', 'index.hbs'), 'utf8');
   }
 
@@ -19,14 +24,9 @@ export class DisplayController {
     res.type('html').send(this.indexHtml);
   }
 
-  @Get('api/notifications/latest')
-  async getLatest() {
-    const result = await this.notificationService.getNotifications(1, 0);
-    const item = result.items[0] || null;
-    if (item) {
-      (item as any)._linkUrl = buildYtEndpointUrl(item);
-    }
-    return { item };
+  @Sse('/stream')
+  stream(): Observable<SseEvent> {
+    return this.sseService.subject.asObservable();
   }
 
   @Get('api/notifications')
@@ -39,13 +39,14 @@ export class DisplayController {
       total: result.total,
       limit: result.limit,
       offset: result.offset,
-      items: result.items.map(item => ({
-        ...item,
-        short_message: item.short_message,
-        _linkUrl: buildYtEndpointUrl(item),
-        _sentFormatted: DateTime.fromMillis(item.sent_at).toRelative(),
-        _sentAbsolute: DateTime.fromMillis(item.sent_at).toFormat('yyyy-MM-dd HH:mm:ss'),
-      })),
+      items: result.items.map(item => enrichNotification(item)),
     };
+  }
+
+  @Get('api/notifications/latest')
+  async getLatest() {
+    const result = await this.notificationService.getNotifications(1, 0);
+    const item = result.items[0] || null;
+    return { item: item ? enrichNotification(item) : null };
   }
 }

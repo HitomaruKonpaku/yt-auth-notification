@@ -1,16 +1,20 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { DisplayController } from './display.controller';
 import { NotificationService } from '../notification/notification.service';
+import { SseService } from '../sse/sse.service';
+import { Subject } from 'rxjs';
 
 describe('DisplayController', () => {
   let controller: DisplayController;
   let notificationService: { getNotifications: jest.Mock };
+  let sseService: { subject: Subject<any> };
 
   beforeEach(async () => {
     notificationService = { getNotifications: jest.fn() };
+    sseService = { subject: new Subject() };
     const module: TestingModule = await Test.createTestingModule({
       controllers: [DisplayController],
-      providers: [{ provide: NotificationService, useValue: notificationService }],
+      providers: [{ provide: NotificationService, useValue: notificationService }, { provide: SseService, useValue: sseService }],
     }).compile();
     controller = module.get<DisplayController>(DisplayController);
   });
@@ -40,9 +44,9 @@ describe('DisplayController', () => {
     });
 
     const result = await controller.getLatest();
-    expect(result.item.id).toBe('latest');
-    expect(result.item.short_message).toEqual({ text: 'newest', rtl: false });
-    expect((result.item as any)._linkUrl).toBeNull();
+    expect(result.item!.id).toBe('latest');
+    expect(result.item!.short_message).toEqual({ text: 'newest', rtl: false });
+    expect(result.item!._linkUrl).toBeNull();
   });
 
   it('GET /api/notifications/latest should return null item when empty', async () => {
@@ -52,5 +56,11 @@ describe('DisplayController', () => {
 
     const result = await controller.getLatest();
     expect(result.item).toBeNull();
+  });
+
+  it('GET /stream should return the SseService subject as observable', () => {
+    const result = controller.stream();
+    expect(result).toBeDefined();
+    expect(typeof (result as any).subscribe).toBe('function');
   });
 });
