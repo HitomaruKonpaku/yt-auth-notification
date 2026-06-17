@@ -4,7 +4,9 @@ import { ChannelModule } from './channel/channel.module';
 import { ConfigModule } from './config/config.module';
 import { Channel } from './db/channel.entity';
 import { Notification } from './db/notification.entity';
+import { Post } from './db/post.entity';
 import { DiscordModule } from './discord/discord.module';
+import { PostModule } from './post/post.module';
 import { DisplayModule } from './display/display.module';
 import { NotificationModule } from './notification/notification.module';
 import { PollingModule } from './polling/polling.module';
@@ -18,6 +20,7 @@ import { YoutubeModule } from './youtube/youtube.module';
       entities: [
         Channel,
         Notification,
+        Post,
       ],
       synchronize: true,
     }),
@@ -28,6 +31,7 @@ import { YoutubeModule } from './youtube/youtube.module';
     // youtube
     YoutubeModule,
     ChannelModule,
+    PostModule,
     NotificationModule,
 
     // ui

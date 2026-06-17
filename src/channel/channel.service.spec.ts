@@ -57,7 +57,7 @@ describe('ChannelService', () => {
       resolveURL: jest.fn(),
     };
     const result = await service.ensureChannel(yt as any);
-    expect(result).toBeNull();
+    expect(result).toBeUndefined();
   });
 
   it('should return previous ownerId on retry exhaustion', async () => {
@@ -73,7 +73,7 @@ describe('ChannelService', () => {
     };
 
     // 3 retries max, all fail
-    let result: string | null = null;
+    let result: string | undefined;
     for (let i = 0; i < 4; i++) {
       result = await service.ensureChannel(failingYt as any);
     }

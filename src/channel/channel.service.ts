@@ -7,12 +7,12 @@ export class ChannelService {
   private readonly logger = new Logger(ChannelService.name);
   private static readonly MAX_RETRIES = 3;
 
-  private ownerId: string | null = null;
+  private ownerId?: string;
   private retries = 0;
 
   constructor(private readonly repo: ChannelRepo) { }
 
-  async ensureChannel(yt: Innertube): Promise<string | null> {
+  async ensureChannel(yt: Innertube): Promise<string | undefined> {
     if (this.ownerId && await this.repo.exists(this.ownerId)) {
       return this.ownerId;
     }

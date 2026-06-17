@@ -1,10 +1,6 @@
 import { Column, Entity, PrimaryColumn } from 'typeorm';
 import type { ShortMessage } from './db.interface';
-
-const shortMessageTransformer = {
-  to: (value: ShortMessage): string => JSON.stringify(value),
-  from: (value: string): ShortMessage => JSON.parse(value),
-};
+import { jsonTransformer } from '../common/json-transformer';
 
 @Entity('notification')
 export class Notification {
@@ -27,12 +23,15 @@ export class Notification {
   video_id?: string;
 
   @Column('text', { nullable: true })
+  post_id?: string;
+
+  @Column('text', { nullable: true })
   linked_comment_id?: string;
 
   @Column('text', { nullable: true })
   endpoint_url?: string;
 
-  @Column('text', { transformer: shortMessageTransformer })
+  @Column('text', { transformer: jsonTransformer })
   short_message: ShortMessage;
 
   @Column('text', { nullable: true })
