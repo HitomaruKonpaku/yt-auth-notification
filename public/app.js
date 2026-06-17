@@ -192,37 +192,44 @@
     } catch (err) { /* ignore */ }
   }
 
-  function handleSseEvent(e) {
+  function handleSseMessage(e) {
+    if (e.data === 'ping') {
+      return;
+    }
+
     try {
-      var data = JSON.parse(e.data);
-      if (!data || !data.item || !data.item.id) {
+      var msg = JSON.parse(e.data);
+      if (!msg || msg.type !== 'notification.new' || !msg.data || !msg.data.item || !msg.data.item.id) {
         return;
       }
-      if (data.item.id === state.latestId) {
+      var item = msg.data.item;
+      if (item.id === state.latestId) {
         return;
       }
-      state.latestId = data.item.id;
+      state.latestId = item.id;
       document.getElementById('newIndicator').classList.add('active');
       document.getElementById('newIndicatorBtn').classList.add('active');
       var audio = new Audio('/se_chat_announce.ogg');
       audio.play().catch(function () { /* autoplay blocked */ });
       if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification(data.item.short_message.text, {
-          icon: data.item.thumbnail_url || undefined,
-          body: data.item.short_message.text,
+        new Notification(item.short_message.text, {
+          icon: item.thumbnail_url || undefined,
+          body: item.short_message.text,
         });
       }
       if (state.offset === 0) {
         var items = state.items || [];
         // Remove duplicate if somehow already present
-        items = items.filter(function (i) { return i.id !== data.item.id; });
-        items.unshift(data.item);
+        items = items.filter(function (i) { return i.id !== item.id; });
+        items.unshift(item);
         state.items = items;
         renderList(items);
       }
       state.total += 1;
       renderPagination();
-    } catch (err) { /* malformed event */ }
+    } catch (err) {
+      console.error('SSE malformed event:', err);
+    }
   }
 
   function changeLimit(value) {
@@ -256,8 +263,8 @@
     history.replaceState({ offset: state.offset }, '', cleanUrl.toString());
     fetchPage();
 
-    var es = new EventSource('/stream');
-    es.addEventListener('notification.new', handleSseEvent);
+    var es = new EventSource('/sse');
+    es.onmessage = handleSseMessage;
   })();
 
   window.addEventListener('popstate', function (e) {

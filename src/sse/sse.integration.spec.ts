@@ -23,14 +23,14 @@ describe('SseService integration', () => {
       next: (msg) => events.push(msg),
       complete: () => {
         expect(events).toHaveLength(2);
-        expect(events[0].event).toBe('a');
-        expect(events[1].event).toBe('b');
+        expect(events[0].data).toEqual({ type: 'a', data: { x: 1 } });
+        expect(events[1].data).toEqual({ type: 'b', data: { x: 2 } });
         done();
       },
     });
 
-    service.push('a', 1);
-    service.push('b', 2);
+    service.push('a', { x: 1 });
+    service.push('b', { x: 2 });
     service.subject.complete();
   });
 });

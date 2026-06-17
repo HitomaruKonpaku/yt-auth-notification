@@ -7,11 +7,10 @@ describe('SseService', () => {
     service = new SseService();
   });
 
-  it('should emit pushed events on the subject', (done) => {
+  it('should push { type, data } wrapped in MessageEvent data', (done) => {
     service.subject.subscribe({
       next: (msg) => {
-        expect(msg.event).toBe('test.event');
-        expect(msg.data).toEqual({ foo: 'bar' });
+        expect(msg.data).toEqual({ type: 'test.event', data: { foo: 'bar' } });
         done();
       },
     });
@@ -19,11 +18,10 @@ describe('SseService', () => {
     service.push('test.event', { foo: 'bar' });
   });
 
-  it('should handle null/undefined data', (done) => {
+  it('should handle null data', (done) => {
     service.subject.subscribe({
       next: (msg) => {
-        expect(msg.event).toBe('empty');
-        expect(msg.data).toBeNull();
+        expect(msg.data).toEqual({ type: 'empty', data: null });
         done();
       },
     });

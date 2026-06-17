@@ -1,11 +1,10 @@
-import { Controller, Get, Query, Res, Sse } from '@nestjs/common';
+import { Controller, Get, MessageEvent, Query, Res, Sse } from '@nestjs/common';
 import { Response } from 'express';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { Observable } from 'rxjs';
 import { NotificationService } from '../notification/notification.service';
 import { enrichNotification } from '../notification/notification.util';
-import type { SseEvent } from '../sse/sse.interface';
 import { SseService } from '../sse/sse.service';
 
 @Controller()
@@ -24,8 +23,8 @@ export class DisplayController {
     res.type('html').send(this.indexHtml);
   }
 
-  @Sse('/stream')
-  stream(): Observable<SseEvent> {
+  @Sse('/sse')
+  stream(): Observable<MessageEvent> {
     return this.sseService.subject.asObservable();
   }
 

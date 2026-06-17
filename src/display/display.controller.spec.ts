@@ -58,7 +58,7 @@ describe('DisplayController', () => {
     expect(result.item).toBeNull();
   });
 
-  it('GET /stream should return the SseService subject as observable', () => {
+  it('GET /sse should return the SseService subject as observable', () => {
     const result = controller.stream();
     expect(result).toBeDefined();
     expect(typeof (result as any).subscribe).toBe('function');
