@@ -2,7 +2,7 @@
   var config = {
     defaultLimit: 20,
     limitOptions: [5, 10, 20, 50, 100],
-    pollIntervalMs: 30000,
+    pollIntervalMs: 15000,
     pollBatchLimit: 10,
     storageKeys: { limit: 'limit' }
   };
