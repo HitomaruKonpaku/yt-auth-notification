@@ -3,6 +3,7 @@ import type Innertube from 'youtubei.js';
 import { YTNodes } from 'youtubei.js';
 import { ChannelService } from '../channel/channel.service';
 import { ConfigService } from '../config/config.service';
+import { SseService } from '../sse/sse.service';
 import type { AccountInfo } from './account.interface';
 
 @Injectable()
@@ -14,6 +15,7 @@ export class AccountService {
   constructor(
     private readonly channelService: ChannelService,
     private readonly configService: ConfigService,
+    private readonly sseService: SseService,
   ) { }
 
   async initialize(yt: Innertube): Promise<void> {
@@ -78,6 +80,18 @@ export class AccountService {
       }
 
       this.initialized = true;
+
+      // Push full account list via SSE so UI can re-render the dropdown
+      const accountList: { id: string; handle: string; name: string; thumbnail_url?: string }[] = [];
+      for (const [id, info] of this.accounts) {
+        accountList.push({
+          id,
+          handle: info.handle,
+          name: info.name,
+          thumbnail_url: info.thumbnail_url,
+        });
+      }
+      this.sseService.push('account.list', { items: accountList });
     } catch (err) {
       this.logger.error('AccountService.initialize() failed', err);
       // Retry next poll

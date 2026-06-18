@@ -2,11 +2,13 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AccountService } from './account.service';
 import { ChannelService } from '../channel/channel.service';
 import { ConfigService } from '../config/config.service';
+import { SseService } from '../sse/sse.service';
 
 describe('AccountService', () => {
   let service: AccountService;
   let channelService: { upsert: jest.Mock };
   let configService: { getConfig: jest.Mock };
+  let sseService: { push: jest.Mock };
 
   const makeChannel = (opts: {
     channel_handle: string;
@@ -26,9 +28,7 @@ describe('AccountService', () => {
 
   const makeYt = (channels: any[], channelIdMap?: Record<string, string>) => ({
     account: {
-      getInfo: jest.fn().mockResolvedValue({
-        contents: { contents: channels },
-      }),
+      getInfo: jest.fn().mockResolvedValue(channels),
     },
     resolveURL: jest.fn().mockImplementation((url: string) => {
       const handle = url.replace('https://www.youtube.com/', '');
@@ -40,11 +40,13 @@ describe('AccountService', () => {
   beforeEach(async () => {
     channelService = { upsert: jest.fn().mockResolvedValue(undefined) };
     configService = { getConfig: jest.fn().mockReturnValue({ accountInitRetries: 3 }) };
+    sseService = { push: jest.fn() };
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AccountService,
         { provide: ChannelService, useValue: channelService },
         { provide: ConfigService, useValue: configService },
+        { provide: SseService, useValue: sseService },
       ],
     }).compile();
     service = module.get<AccountService>(AccountService);
@@ -123,6 +125,17 @@ describe('AccountService', () => {
     // Entry stays null after all retries fail
     const entries = Array.from(service.accounts);
     expect(entries).toHaveLength(0); // null entries filtered out
+  });
+
+  it('should push account.list via SSE after init', async () => {
+    const ch = makeChannel({ channel_handle: '@test', account_name: 'Test' });
+    const yt = makeYt([ch], { '@test': 'UC123' });
+
+    await service.initialize(yt as any);
+
+    expect(sseService.push).toHaveBeenCalledWith('account.list', {
+      items: [{ id: 'UC123', handle: '@test', name: 'Test', thumbnail_url: undefined }],
+    });
   });
 
   it('should initialize only once', async () => {

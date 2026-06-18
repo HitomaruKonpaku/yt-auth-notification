@@ -89,35 +89,49 @@ export default function App() {
       setNotifEnabled(true);
     }
 
+    const handleAccountList = (data: any) => {
+      if (data?.items) {
+        setAccounts(data.items);
+      }
+    };
+
+    const handleNotificationNew = (data: any) => {
+      if (!data?.item) return;
+      const item = data.item as NotificationItem;
+
+      if (channelRef.current && item.owner_id !== channelRef.current) return;
+      if (seenIds.current.has(item.id)) return;
+      seenIds.current.add(item.id);
+
+      setNewCount((prev) => prev + 1);
+
+      if (notifEnabledRef.current) {
+        new Notification(item.short_message.text, {
+          icon: item.thumbnail_url || undefined,
+          body: item.short_message.text,
+        });
+        new Audio('/se_chat_announce.ogg').play().catch((err) => {
+          console.error('Audio playback failed:', err);
+        });
+      }
+
+      if (offsetRef.current === 0) {
+        setNotifications((prev) => [item, ...prev]);
+      }
+      setTotal((prev) => prev + 1);
+    };
+
+    const handlers: Record<string, (data: any) => void> = {
+      'account.list': handleAccountList,
+      'notification.new': handleNotificationNew,
+    };
+
     const es = new EventSource('/sse');
     es.onmessage = (event) => {
       if (event.data === 'ping') return;
       try {
         const msg = JSON.parse(event.data);
-        if (msg?.type === 'notification.new' && msg.data?.item) {
-          const item = msg.data.item as NotificationItem;
-
-          // Use refs — SSE callback runs with mount-time closure, refs stay current
-          if (channelRef.current && item.owner_id !== channelRef.current) return;
-          if (seenIds.current.has(item.id)) return;
-          seenIds.current.add(item.id);
-
-          setNewCount((prev) => prev + 1);
-
-          if (notifEnabledRef.current) {
-            new Notification(item.short_message.text, {
-              icon: item.thumbnail_url || undefined,
-              body: item.short_message.text,
-            });
-            const audio = new Audio('/se_chat_announce.ogg');
-            audio.play().catch(() => { /* autoplay blocked */ });
-          }
-
-          if (offsetRef.current === 0) {
-            setNotifications((prev) => [item, ...prev]);
-          }
-          setTotal((prev) => prev + 1);
-        }
+        handlers[msg?.type]?.(msg.data);
       } catch {
         // ignore malformed events
       }
@@ -164,14 +178,12 @@ export default function App() {
 
   const toggleNotif = useCallback(() => {
     if (!('Notification' in window)) return;
-    if (Notification.permission === 'granted') {
-      setNotifEnabled((prev) => !prev);
-    } else if (Notification.permission !== 'denied') {
-      Notification.requestPermission().then((p) => {
-        setNotifEnabled(p === 'granted');
-      });
-    }
-  }, []);
+    if (notifEnabled) return; // once enabled, stays enabled
+    if (Notification.permission === 'denied') return;
+    Notification.requestPermission().then((p) => {
+      setNotifEnabled(p === 'granted');
+    });
+  }, [notifEnabled]);
 
   const resetNewCount = useCallback(() => {
     setNewCount(0);
