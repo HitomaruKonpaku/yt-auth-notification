@@ -106,11 +106,17 @@ export default function App() {
       setNewCount((prev) => prev + 1);
 
       if (notifEnabledRef.current) {
-        new Notification(item.short_message.text, {
+        const notif = new Notification(item.short_message.text, {
           icon: item.thumbnail_url || undefined,
           body: item.short_message.text,
         });
-        new Audio('/se_chat_announce.ogg').play().catch((err) => {
+        notif.onclick = () => {
+          window.focus();
+          notif.close();
+        };
+        const audio = new Audio('/se_chat_announce.ogg');
+        audio.onerror = () => console.error('Audio failed to load or decode');
+        audio.play().catch((err) => {
           console.error('Audio playback failed:', err);
         });
       }
