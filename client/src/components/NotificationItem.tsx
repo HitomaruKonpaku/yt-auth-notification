@@ -1,6 +1,8 @@
+import { DateTime } from 'luxon';
 import { Anchor, Avatar, Group, Image, Stack, Text } from '@mantine/core';
 import { useHover } from '@mantine/hooks';
 import type { NotificationItem as NotifItem } from '../api';
+import { useConfig } from '../context/ConfigContext';
 
 interface Props {
   item: NotifItem;
@@ -8,6 +10,11 @@ interface Props {
 
 export default function NotificationItem({ item }: Props) {
   const { hovered, ref } = useHover();
+  const { useAbsoluteTime } = useConfig();
+
+  const timeDisplay = useAbsoluteTime
+    ? DateTime.fromMillis(item.sent_at).toFormat('yyyy-MM-dd HH:mm:ss')
+    : DateTime.fromMillis(item.sent_at).toRelative();
 
   const content = (
     <Group
@@ -22,10 +29,8 @@ export default function NotificationItem({ item }: Props) {
     >
       <Avatar src={item.thumbnail_url} radius="md" size="lg" />
       <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
-        <Text size="sm">{item.short_message.text}</Text>
-        <Text size="xs" title={item._sentAbsolute}>
-          {item._sentRelative}
-        </Text>
+        <Text size="sm" ta="justify">{item.short_message.text}</Text>
+        <Text size="xs" ff="monospace">{timeDisplay}</Text>
       </Stack>
       {item.video_id && (
         <Image

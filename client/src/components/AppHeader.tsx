@@ -1,6 +1,7 @@
-import { ActionIcon, Avatar, Group, Indicator, Menu, Select, Text } from '@mantine/core';
+import { ActionIcon, Avatar, Group, Indicator, Menu, Select, Switch, Text } from '@mantine/core';
 import { IconBell, IconBellFilled, IconBellOff, IconHome, IconList } from '@tabler/icons-react';
 import type { Account } from '../api';
+import { useConfig } from '../context/ConfigContext';
 
 interface Props {
   accounts: Account[];
@@ -36,6 +37,7 @@ export default function AppHeader(props: Props) {
     onSelectChannel, onToggleNotif, onChangeLimit, onResetNewCount,
   } = props;
 
+  const { useAbsoluteTime, toggleAbsoluteTime } = useConfig();
   const selected = selectedAccount(accounts, selectedChannelId);
 
   return (
@@ -99,6 +101,13 @@ export default function AppHeader(props: Props) {
         {notifIcon(notifEnabled, notifLabel)}
       </ActionIcon>
 
+      <Switch
+        checked={useAbsoluteTime}
+        onChange={toggleAbsoluteTime}
+        size="xs"
+        aria-label="Toggle absolute time"
+      />
+
       <Select
         data={['5', '10', '20', '50', '100']}
         value={String(limit)}
@@ -107,6 +116,10 @@ export default function AppHeader(props: Props) {
         w={64}
         allowDeselect={false}
         withAlignedLabels
+        styles={(t) => ({
+          input: { fontFamily: t.fontFamilyMonospace },
+          option: { fontFamily: t.fontFamilyMonospace },
+        })}
       />
 
       <Indicator

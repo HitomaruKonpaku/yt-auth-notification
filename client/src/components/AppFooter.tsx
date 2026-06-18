@@ -20,6 +20,7 @@ export default function AppFooter({ offset, limit, total, onGoTo }: Props) {
       <Pagination.Root
         total={totalPages}
         value={page}
+        disabled={!total}
         onChange={goToPage}
       >
         <Group gap="xs">

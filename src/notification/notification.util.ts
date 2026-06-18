@@ -1,4 +1,3 @@
-import { DateTime } from 'luxon';
 import { buildYtEndpointUrl } from '../common/link-builder';
 
 export interface Enrichable {
@@ -11,13 +10,9 @@ export interface Enrichable {
 
 export function enrichNotification<T extends Enrichable>(item: T): T & {
   _url: string | null;
-  _sentRelative: string | null;
-  _sentAbsolute: string;
 } {
   return {
     ...item,
     _url: buildYtEndpointUrl(item),
-    _sentRelative: DateTime.fromMillis(item.sent_at).toRelative(),
-    _sentAbsolute: DateTime.fromMillis(item.sent_at).toFormat('yyyy-MM-dd HH:mm:ss'),
   };
 }

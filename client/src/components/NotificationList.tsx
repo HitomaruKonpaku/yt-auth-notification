@@ -1,13 +1,15 @@
 import { Center, Divider, Loader, Stack, Text } from '@mantine/core';
 import type { NotificationItem as NotifItem } from '../api';
+import { useLoading } from '../context/LoadingContext';
 import NotificationItem from './NotificationItem';
 
 interface Props {
   notifications: NotifItem[];
-  loading: boolean;
 }
 
-export default function NotificationList({ notifications, loading }: Props) {
+export default function NotificationList({ notifications }: Props) {
+  const { loading } = useLoading();
+
   if (loading) {
     return (
       <Center py="xl">

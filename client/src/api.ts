@@ -18,8 +18,6 @@ export interface NotificationItem {
   short_message: { text: string; rtl?: boolean };
   thumbnail_url: string | null;
   _url: string | null;
-  _sentRelative: string;
-  _sentAbsolute: string;
 }
 
 export interface NotificationsResponse {

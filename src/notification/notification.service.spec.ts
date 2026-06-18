@@ -142,8 +142,6 @@ describe('NotificationService', () => {
       item: expect.objectContaining({
         id: '1',
         _url: expect.any(String),
-        _sentRelative: expect.any(String),
-        _sentAbsolute: expect.any(String),
       }),
     }));
   });

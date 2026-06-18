@@ -9,6 +9,8 @@ import {
 import AppFooter from './components/AppFooter';
 import AppHeader from './components/AppHeader';
 import NotificationList from './components/NotificationList';
+import { useLoading } from './context/LoadingContext';
+import { theme } from './theme';
 
 const DEFAULT_LIMIT = 10;
 
@@ -38,10 +40,12 @@ export default function App() {
   const [limit, setLimit] = useState(DEFAULT_LIMIT);
   const [offset, setOffset] = useState(0);
   const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const { setLoading } = useLoading();
   const [notifEnabled, setNotifEnabled] = useState(false);
+  const [permission, setPermission] = useState(() =>
+    'Notification' in window ? Notification.permission : 'denied'
+  );
   const [newCount, setNewCount] = useState(0);
-
   // Refs for SSE handler — avoids stale closure in the mount-time EventSource callback
   const channelRef = useRef<string | null>(null);
   const notifEnabledRef = useRef(false);
@@ -86,6 +90,7 @@ export default function App() {
     loadNotifications(channelId, urlLimit, urlOffset);
 
     if ('Notification' in window && Notification.permission === 'granted') {
+      setPermission('granted');
       setNotifEnabled(true);
     }
 
@@ -185,8 +190,9 @@ export default function App() {
   const toggleNotif = useCallback(() => {
     if (!('Notification' in window)) return;
     if (notifEnabled) return; // once enabled, stays enabled
-    if (Notification.permission === 'denied') return;
+    if (permission === 'denied') return;
     Notification.requestPermission().then((p) => {
+      setPermission(p);
       setNotifEnabled(p === 'granted');
     });
   }, [notifEnabled]);
@@ -198,12 +204,12 @@ export default function App() {
 
   const notifLabel = (() => {
     if (!('Notification' in window)) return 'unsupported';
-    if (Notification.permission === 'denied') return 'blocked';
+    if (permission === 'denied') return 'blocked';
     return 'enable notifs';
   })();
 
   return (
-    <MantineProvider defaultColorScheme="dark">
+    <MantineProvider defaultColorScheme="dark" theme={theme}>
       <AppShell
         header={{ height: 50 }}
         footer={{ height: 50 }}
@@ -229,7 +235,6 @@ export default function App() {
           <Container maw={800} px={{ base: 0, sm: 'md' }}>
             <NotificationList
               notifications={notifications}
-              loading={loading}
             />
           </Container>
         </AppShell.Main>
