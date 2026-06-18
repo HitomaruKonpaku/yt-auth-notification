@@ -141,8 +141,8 @@ describe('NotificationService', () => {
     expect(sseService.push).toHaveBeenCalledWith('notification.new', expect.objectContaining({
       item: expect.objectContaining({
         id: '1',
-        _linkUrl: expect.any(String),
-        _sentFormatted: expect.any(String),
+        _url: expect.any(String),
+        _sentRelative: expect.any(String),
         _sentAbsolute: expect.any(String),
       }),
     }));

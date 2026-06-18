@@ -7,18 +7,24 @@ export interface Account {
 
 export interface NotificationItem {
   id: string;
+  created_at?: number;
+  updated_at?: number;
+  sent_at: number;
+  owner_id: string | null;
+  video_id: string | null;
+  post_id: string | null;
+  linked_comment_id?: string;
+  endpoint_url?: string;
   short_message: { text: string; rtl?: boolean };
   thumbnail_url: string | null;
-  video_id: string | null;
-  _linkUrl: string | null;
-  _sentFormatted: string;
+  _url: string | null;
+  _sentRelative: string;
   _sentAbsolute: string;
-  owner_id: string;
 }
 
 export interface NotificationsResponse {
-  items: NotificationItem[];
   total: number;
+  items: NotificationItem[];
 }
 
 export interface AccountsResponse {

@@ -10,7 +10,7 @@ import AppFooter from './components/AppFooter';
 import AppHeader from './components/AppHeader';
 import NotificationList from './components/NotificationList';
 
-const DEFAULT_LIMIT = 20;
+const DEFAULT_LIMIT = 10;
 
 function readUrl(): { channelId: string | null; limit: number; offset: number } {
   const params = new URLSearchParams(location.search);

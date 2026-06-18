@@ -10,14 +10,14 @@ export interface Enrichable {
 }
 
 export function enrichNotification<T extends Enrichable>(item: T): T & {
-  _linkUrl: string | null;
-  _sentFormatted: string | null;
+  _url: string | null;
+  _sentRelative: string | null;
   _sentAbsolute: string;
 } {
   return {
     ...item,
-    _linkUrl: buildYtEndpointUrl(item),
-    _sentFormatted: DateTime.fromMillis(item.sent_at).toRelative(),
+    _url: buildYtEndpointUrl(item),
+    _sentRelative: DateTime.fromMillis(item.sent_at).toRelative(),
     _sentAbsolute: DateTime.fromMillis(item.sent_at).toFormat('yyyy-MM-dd HH:mm:ss'),
   };
 }

@@ -23,7 +23,7 @@ describe('NotificationController', () => {
 
     const result = await controller.getNotifications(50, 0);
     expect(result.total).toBe(1);
-    expect(result.items[0]._linkUrl).toBeDefined();
+    expect(result.items[0]._url).toBeDefined();
   });
 
   it('GET /api/notifications/latest should return newest item', async () => {

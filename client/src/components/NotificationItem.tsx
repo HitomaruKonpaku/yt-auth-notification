@@ -18,13 +18,13 @@ export default function NotificationItem({ item }: Props) {
       px="sm"
       wrap="nowrap"
       bg={hovered ? 'dark.4' : undefined}
-      style={{ cursor: item._linkUrl ? 'pointer' : 'default' }}
+      style={{ cursor: item._url ? 'pointer' : 'default' }}
     >
       <Avatar src={item.thumbnail_url} radius="md" size="lg" />
       <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
         <Text size="sm">{item.short_message.text}</Text>
         <Text size="xs" title={item._sentAbsolute}>
-          {item._sentFormatted}
+          {item._sentRelative}
         </Text>
       </Stack>
       {item.video_id && (
@@ -40,9 +40,9 @@ export default function NotificationItem({ item }: Props) {
     </Group>
   );
 
-  if (item._linkUrl) {
+  if (item._url) {
     return (
-      <Anchor href={item._linkUrl} target="_blank" rel="noopener" underline="never" c="inherit">
+      <Anchor href={item._url} target="_blank" rel="noopener" underline="never" c="inherit">
         {content}
       </Anchor>
     );

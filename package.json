@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "nest build",
+    "client:build": "cd client && npm run build",
+    "client:dev": "cd client && npm run dev",
+    "build": "npm run client:build && nest build",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --watch --debug",
