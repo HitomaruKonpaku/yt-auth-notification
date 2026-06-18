@@ -34,6 +34,7 @@ export default function NotificationItem({ item }: Props) {
           h={48}
           radius="sm"
           fit="cover"
+          referrerPolicy="no-referrer"
         />
       )}
     </Group>
