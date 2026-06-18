@@ -68,6 +68,19 @@ describe('ConfigService', () => {
       expect(() => new ConfigService()).toThrow(/Config file not found/);
     });
 
+    it('should apply defaults for new fields', () => {
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
+      (fs.readFileSync as jest.Mock).mockReturnValue('empty');
+      (yaml.load as jest.Mock).mockReturnValue({});
+
+      service = new ConfigService();
+      const config = service.getConfig();
+
+      expect(config.maxBackoffMs).toBe(30 * 60 * 1000);
+      expect(config.sseKeepaliveMs).toBe(30000);
+      expect(config.accountInitRetries).toBe(3);
+    });
+
     it('should default msg to empty string per webhook', () => {
       (fs.existsSync as jest.Mock).mockReturnValue(true);
       (fs.readFileSync as jest.Mock).mockReturnValue('yaml');

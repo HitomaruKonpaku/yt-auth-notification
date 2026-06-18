@@ -1,32 +1,38 @@
 import { Injectable, Logger } from '@nestjs/common';
-import Innertube from 'youtubei.js';
+import { Innertube, Types } from 'youtubei.js';
 import { CookieService } from './cookie.service';
 
 @Injectable()
 export class YTProvider {
   private readonly logger = new Logger(YTProvider.name);
-  private yt: Innertube | null = null;
+  private readonly yts = new Map<string, Innertube>();
 
   constructor(private readonly cookieService: CookieService) {
     this.cookieService.on('changed', () => {
-      this.logger.log('Cookie file changed, invalidating Innertube session');
-      this.yt = null;
+      this.logger.log('Cookie file changed, invalidating all Innertube sessions');
+      this.yts.clear();
     });
   }
 
-  async getYt(): Promise<Innertube> {
-    if (this.yt) {
-      return this.yt;
+  deleteYt(channelId: string): void {
+    this.yts.delete(channelId);
+  }
+
+  async getYt(channelId: string, pageId?: string): Promise<Innertube> {
+    const existing = this.yts.get(channelId);
+    if (existing) {
+      return existing;
     }
 
-    try {
-      const cookie = this.cookieService.getCookieString();
-      this.yt = await Innertube.create({ cookie });
-      this.logger.log('Innertube session created successfully');
-      return this.yt;
-    } catch (err) {
-      this.logger.error('Failed to create Innertube session', err);
-      throw err;
+    const cookie = this.cookieService.getCookieString();
+    const opts:Types.InnerTubeConfig  = { cookie };
+    if (pageId) {
+      opts.on_behalf_of_user = pageId;
     }
+
+    const yt = await Innertube.create(opts);
+    this.yts.set(channelId, yt);
+    this.logger.log(`Innertube session created for channel ${channelId}${pageId ? ' (inactive)' : ' (active)'}`);
+    return yt;
   }
 }

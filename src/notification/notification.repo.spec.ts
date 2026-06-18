@@ -43,6 +43,7 @@ describe('NotificationRepo', () => {
     expect(result).toHaveLength(2);
     expect(result[0].id).toBe('2');
     expect(mockRepo.find).toHaveBeenCalledWith({
+      where: {},
       order: { sent_at: 'DESC' },
       skip: 0,
       take: 10,

@@ -35,15 +35,24 @@ export class NotificationRepo {
     return ids.filter(id => !existingIds.has(id));
   }
 
-  async findAll(opts: PaginationOpts): Promise<Notification[]> {
+  async findAll(opts: PaginationOpts & { channelId?: string }): Promise<Notification[]> {
+    const where: any = {};
+    if (opts.channelId) {
+      where.owner_id = opts.channelId;
+    }
     return this.repo.find({
+      where,
       order: { sent_at: 'DESC' },
       skip: opts.offset,
       take: opts.limit,
     });
   }
 
-  async count(): Promise<number> {
-    return this.repo.count();
+  async count(channelId?: string): Promise<number> {
+    const where: any = {};
+    if (channelId) {
+      where.owner_id = channelId;
+    }
+    return this.repo.count({ where });
   }
 }

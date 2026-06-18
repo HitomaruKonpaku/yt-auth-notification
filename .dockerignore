@@ -4,3 +4,9 @@
 !nest-cli.json
 !package*.json
 !tsconfig*.json
+
+!client/src/
+!client/index.html
+!client/package*.json
+!client/tsconfig*.json
+!client/vite.config.ts

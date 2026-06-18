@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AccountModule } from './account/account.module';
 import { ChannelModule } from './channel/channel.module';
 import { ConfigModule } from './config/config.module';
 import { SseModule } from './sse/sse.module';
@@ -29,6 +30,9 @@ import { YoutubeModule } from './youtube/youtube.module';
     ConfigModule,
     SseModule,
     PollingModule,
+
+    // account
+    AccountModule,
 
     // youtube
     YoutubeModule,

@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConfigModule } from '../config/config.module';
 import { SseModule } from './sse.module';
 import { SseService } from './sse.service';
 
@@ -7,7 +8,7 @@ describe('SseService integration', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      imports: [SseModule],
+      imports: [ConfigModule, SseModule],
     }).compile();
     service = module.get<SseService>(SseService);
   });

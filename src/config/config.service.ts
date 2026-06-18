@@ -27,6 +27,9 @@ export class ConfigService {
 
     this.config = {
       interval: data.interval ?? 60,
+      maxBackoffMs: data.maxBackoffMs ?? 30 * 60 * 1000,
+      sseKeepaliveMs: data.sseKeepaliveMs ?? 30000,
+      accountInitRetries: data.accountInitRetries ?? 3,
       webhooks: {
         discord: discordRaw
           .filter(w => typeof w.url === 'string' && w.url.length > 0)

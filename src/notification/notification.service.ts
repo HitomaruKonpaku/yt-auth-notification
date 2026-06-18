@@ -54,9 +54,9 @@ export class NotificationService {
     return newItems;
   }
 
-  async getNotifications(limit: number, offset: number) {
-    const total = await this.repo.count();
-    const items = await this.repo.findAll({ limit, offset });
+  async getNotifications(limit: number, offset: number, channelId?: string) {
+    const total = await this.repo.count(channelId);
+    const items = await this.repo.findAll({ limit, offset, channelId });
     return { total, limit, offset, items };
   }
 

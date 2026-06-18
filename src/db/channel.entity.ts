@@ -16,4 +16,7 @@ export class Channel {
 
   @Column('text', { nullable: true })
   name?: string;
+
+  @Column('text', { nullable: true })
+  thumbnail_url?: string;
 }

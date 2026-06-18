@@ -5,6 +5,10 @@ export interface DiscordWebhookConfig {
 
 export interface AppConfig {
   interval?: number;
+  maxBackoffMs?: number;
+  sseKeepaliveMs?: number;
+  accountInitRetries?: number;
+
   webhooks?: {
     discord?: DiscordWebhookConfig[];
   };

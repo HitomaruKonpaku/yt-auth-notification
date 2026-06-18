@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { YT, YTNodes } from 'youtubei.js';
-import { ChannelService } from '../channel/channel.service';
+import { AccountService } from '../account/account.service';
 import { ConfigService } from '../config/config.service';
 import { DiscordService } from '../discord/discord.service';
 import { NotificationService } from '../notification/notification.service';
@@ -9,7 +9,6 @@ import { YTProvider } from '../youtube/yt.provider';
 @Injectable()
 export class PollingService {
   private readonly logger = new Logger(PollingService.name);
-  private static readonly MAX_BACKOFF_MS = 30 * 60 * 1000;
 
   private isFirstPoll = true;
   private currentWaitMs: number;
@@ -17,10 +16,10 @@ export class PollingService {
 
   constructor(
     private readonly configService: ConfigService,
+    private readonly accountService: AccountService,
     private readonly ytProvider: YTProvider,
     private readonly notificationService: NotificationService,
     private readonly discordService: DiscordService,
-    private readonly channelService: ChannelService,
   ) {
     this.currentWaitMs = this.getIntervalMs();
   }
@@ -40,30 +39,56 @@ export class PollingService {
 
   private async poll() {
     try {
-      const yt = await this.ytProvider.getYt();
+      // Lazy init: discover accounts on first poll via the active session
+      if (!this.accountService.isInitialized) {
+        const activeYt = await this.ytProvider.getYt('__active__');
+        await this.accountService.initialize(activeYt);
+        this.ytProvider.deleteYt('__active__');
+      }
 
-      const ownerId = await this.channelService.ensureChannel(yt);
+      for (const [channelId] of this.accountService.accounts) {
+        await this.pollChannel(channelId);
+      }
 
-      this.logger.debug('yt.getNotifications()');
+      this.isFirstPoll = false;
+      this.currentWaitMs = this.getIntervalMs();
+    } catch (err) {
+      this.logger.error('Poll loop failed', err);
+      this.currentWaitMs = Math.min(
+        this.currentWaitMs * 2,
+        this.configService.getConfig().maxBackoffMs!,
+      );
+      this.logger.warn(`Backing off: next poll in ${this.currentWaitMs / 1000}s`);
+    }
+
+    this.scheduleNext();
+  }
+
+  private async pollChannel(channelId: string) {
+    try {
+      const account = this.accountService.get(channelId);
+      if (!account) {
+        this.logger.warn(`Account info not found for ${channelId}, skipping`);
+        return;
+      }
+
+      const yt = await this.ytProvider.getYt(channelId, account.pageId);
+
+      this.logger.debug(`[${channelId}] yt.getNotifications()`);
       const menu: YT.NotificationsMenu = await yt.getNotifications();
-      this.logger.debug(`  -> ${JSON.stringify({ count: menu.contents.length })}`);
+      this.logger.debug(`[${channelId}] -> ${menu.contents.length} items`);
 
       const contents: YTNodes.Notification[] = [...menu.contents];
-      let pages = 1;
 
-      // On first poll after boot, fetch continuation pages
+      // First-poll continuation per account
       if (this.isFirstPoll) {
-        this.isFirstPoll = false;
         const next = parseInt(process.env.NOTIFICATION_NEXT ?? '0', 10) || 0;
         if (next < 0) {
           let page = menu;
           while (page.contents.length > 0) {
             try {
-              this.logger.debug(`page.getContinuation() [${pages}]`);
               page = await page.getContinuation();
-              this.logger.debug(`  -> ${JSON.stringify({ count: page.contents.length })}`);
               contents.push(...page.contents);
-              pages++;
             } catch {
               break;
             }
@@ -72,11 +97,8 @@ export class PollingService {
           let page = menu;
           for (let i = 0; i < next; i++) {
             try {
-              this.logger.debug(`page.getContinuation() [${i + 1}]`);
               page = await page.getContinuation();
-              this.logger.debug(`  -> ${JSON.stringify({ count: page.contents.length })}`);
               contents.push(...page.contents);
-              pages++;
             } catch {
               break;
             }
@@ -84,21 +106,15 @@ export class PollingService {
         }
       }
 
-      this.logger.log(`Total: ${contents.length} notifications (${pages} page(s))`);
+      this.logger.log(`[${channelId}] Total: ${contents.length} notification(s)`);
 
-      const newItems = await this.notificationService.processNotifications(contents, ownerId);
+      const newItems = await this.notificationService.processNotifications(contents, channelId);
 
       for (const item of newItems) {
         await this.discordService.relayNotification(item);
       }
-
-      this.currentWaitMs = this.getIntervalMs();
     } catch (err) {
-      this.logger.error('Innertube poll failed', err);
-      this.currentWaitMs = Math.min(this.currentWaitMs * 2, PollingService.MAX_BACKOFF_MS);
-      this.logger.warn(`Backing off: next poll in ${this.currentWaitMs / 1000}s`);
+      this.logger.error(`[${channelId}] Poll failed`, err);
     }
-
-    this.scheduleNext();
   }
 }

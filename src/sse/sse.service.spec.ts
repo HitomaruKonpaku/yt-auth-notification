@@ -1,10 +1,17 @@
 import { SseService } from './sse.service';
+import { ConfigService } from '../config/config.service';
 
 describe('SseService', () => {
   let service: SseService;
 
   beforeEach(() => {
-    service = new SseService();
+    jest.useFakeTimers();
+    const configService = { getConfig: jest.fn().mockReturnValue({ sseKeepaliveMs: 30000 }) } as any;
+    service = new SseService(configService);
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   it('should push { type, data } wrapped in MessageEvent data', (done) => {
@@ -27,5 +34,13 @@ describe('SseService', () => {
     });
 
     service.push('empty', null);
+  });
+
+  it('should emit keepalive ping at configured interval', () => {
+    const spy = jest.fn();
+    service.subject.subscribe({ next: spy });
+
+    jest.advanceTimersByTime(30000);
+    expect(spy).toHaveBeenCalledWith({ data: 'ping' });
   });
 });

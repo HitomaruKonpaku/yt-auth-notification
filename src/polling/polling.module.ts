@@ -1,13 +1,11 @@
 import { Global, Module } from '@nestjs/common';
+import { AccountModule } from '../account/account.module';
 import { PollingService } from './polling.service';
 
 @Global()
 @Module({
-  providers: [
-    PollingService,
-  ],
-  exports: [
-    PollingService,
-  ],
+  imports: [AccountModule],
+  providers: [PollingService],
+  exports: [PollingService],
 })
 export class PollingModule { }
