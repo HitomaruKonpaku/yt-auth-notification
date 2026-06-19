@@ -9,6 +9,7 @@ import {
 import AppFooter from './components/AppFooter';
 import AppHeader from './components/AppHeader';
 import NotificationList from './components/NotificationList';
+import { readConfig, useConfig } from './context/ConfigContext';
 import { useLoading } from './context/LoadingContext';
 import { theme } from './theme';
 
@@ -16,7 +17,7 @@ const DEFAULT_LIMIT = 10;
 
 function readUrl(): { channelId: string | null; limit: number; offset: number } {
   const params = new URLSearchParams(location.search);
-  const storedLimit = Number(localStorage.getItem('limit')) || DEFAULT_LIMIT;
+  const storedLimit = readConfig().limit;
   return {
     channelId: params.get('channel_id') || null,
     limit: Number(params.get('limit')) || storedLimit || DEFAULT_LIMIT,
@@ -37,7 +38,7 @@ export default function App() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
-  const [limit, setLimit] = useState(DEFAULT_LIMIT);
+  const { limit, setLimit } = useConfig();
   const [offset, setOffset] = useState(0);
   const [total, setTotal] = useState(0);
   const { setLoading } = useLoading();
@@ -45,7 +46,7 @@ export default function App() {
   const [permission, setPermission] = useState(() =>
     'Notification' in window ? Notification.permission : 'denied'
   );
-  const [newCount, setNewCount] = useState(0);
+  const [newCount, setNewCount] = useState(10);
   // Refs for SSE handler — avoids stale closure in the mount-time EventSource callback
   const channelRef = useRef<string | null>(null);
   const notifEnabledRef = useRef(false);
@@ -182,10 +183,9 @@ export default function App() {
   const changeLimit = useCallback((newLimit: number) => {
     setLimit(newLimit);
     setOffset(0);
-    localStorage.setItem('limit', String(newLimit));
     writeUrl(selectedChannelId, newLimit, 0);
     loadNotifications(selectedChannelId, newLimit, 0);
-  }, [selectedChannelId, loadNotifications]);
+  }, [selectedChannelId, setLimit, loadNotifications]);
 
   const toggleNotif = useCallback(() => {
     if (!('Notification' in window)) return;
@@ -219,7 +219,6 @@ export default function App() {
             <AppHeader
               accounts={accounts}
               selectedChannelId={selectedChannelId}
-              limit={limit}
               notifEnabled={notifEnabled}
               newCount={newCount}
               notifLabel={notifLabel}

@@ -26,7 +26,7 @@ export default function AppFooter({ offset, limit, total, onGoTo }: Props) {
         <Group gap="xs">
           <Pagination.First />
           <Pagination.Previous />
-          <Text size="sm" mx="xs" c="dimmed" style={{ minWidth: 100, textAlign: 'center' }}>
+          <Text size="sm" mx="xs" style={{ minWidth: 100, textAlign: 'center' }}>
             {startItem}&ndash;{endItem} / {total}
           </Text>
           <Pagination.Next />

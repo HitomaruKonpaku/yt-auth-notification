@@ -1,6 +1,7 @@
 import { DateTime } from 'luxon';
 import { Anchor, Avatar, Group, Image, Stack, Text } from '@mantine/core';
 import { useHover } from '@mantine/hooks';
+import { useEffect, useState } from 'react';
 import type { NotificationItem as NotifItem } from '../api';
 import { useConfig } from '../context/ConfigContext';
 
@@ -11,6 +12,13 @@ interface Props {
 export default function NotificationItem({ item }: Props) {
   const { hovered, ref } = useHover();
   const { useAbsoluteTime } = useConfig();
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    const onVisible = () => { if (document.visibilityState === 'visible') setTick((t) => t + 1); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, []);
 
   const timeDisplay = useAbsoluteTime
     ? DateTime.fromMillis(item.sent_at).toFormat('yyyy-MM-dd HH:mm:ss')

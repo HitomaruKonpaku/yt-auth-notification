@@ -6,7 +6,6 @@ import { useConfig } from '../context/ConfigContext';
 interface Props {
   accounts: Account[];
   selectedChannelId: string | null;
-  limit: number;
   notifEnabled: boolean;
   newCount: number;
   notifLabel: string;
@@ -33,11 +32,11 @@ const notifIcon = (enabled: boolean, label: string) => {
 
 export default function AppHeader(props: Props) {
   const {
-    accounts, selectedChannelId, limit, notifEnabled, newCount, notifLabel,
+    accounts, selectedChannelId, notifEnabled, newCount, notifLabel,
     onSelectChannel, onToggleNotif, onChangeLimit, onResetNewCount,
   } = props;
 
-  const { useAbsoluteTime, toggleAbsoluteTime } = useConfig();
+  const { useAbsoluteTime, toggleAbsoluteTime, limit } = useConfig();
   const selected = selectedAccount(accounts, selectedChannelId);
 
   return (
