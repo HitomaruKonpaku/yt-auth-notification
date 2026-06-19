@@ -46,7 +46,7 @@ export default function App() {
   const [permission, setPermission] = useState(() =>
     'Notification' in window ? Notification.permission : 'denied'
   );
-  const [newCount, setNewCount] = useState(10);
+  const [newCount, setNewCount] = useState(0);
   // Refs for SSE handler — avoids stale closure in the mount-time EventSource callback
   const channelRef = useRef<string | null>(null);
   const notifEnabledRef = useRef(false);
