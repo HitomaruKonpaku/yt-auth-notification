@@ -1,4 +1,4 @@
-import { ActionIcon, Avatar, Divider, Drawer, Group, Indicator, Menu, Select, Stack, Switch, Text } from '@mantine/core';
+import { ActionIcon, Avatar, Code, Divider, Drawer, Group, Indicator, Menu, Select, Stack, Switch, Text } from '@mantine/core';
 import { IconBell, IconBellFilled, IconBellOff, IconHome, IconList, IconSettings } from '@tabler/icons-react';
 import { useState } from 'react';
 import type { Account } from '../api';
@@ -119,7 +119,7 @@ export default function AppHeader(props: Props) {
         size="xs"
       >
         <Divider mb="md" />
-        <Stack>
+        <Stack gap="sm">
           <Group wrap="nowrap" justify="space-between">
             <Text size="sm">Use absolute time</Text>
             <Switch
@@ -144,7 +144,7 @@ export default function AppHeader(props: Props) {
 
           <Group wrap="nowrap" justify="space-between">
             <Text size="sm">Version</Text>
-            <Text size="sm">{window.__VERSION__ || 'dev'}</Text>
+            <Code>{window.__VERSION__ || 'dev'}</Code>
           </Group>
         </Stack>
       </Drawer>
