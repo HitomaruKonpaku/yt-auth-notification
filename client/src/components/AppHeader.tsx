@@ -135,11 +135,10 @@ export default function AppHeader(props: Props) {
               data={['5', '10', '20', '50', '100']}
               value={String(limit)}
               onChange={(v) => onChangeLimit(Number(v))}
-              size="sm"
+              size="md"
               w={80}
               allowDeselect={false}
               withAlignedLabels
-              styles={{ input: { fontSize: 16 } }}
             />
           </Group>
 
