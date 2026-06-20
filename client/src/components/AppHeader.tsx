@@ -139,6 +139,7 @@ export default function AppHeader(props: Props) {
               w={80}
               allowDeselect={false}
               withAlignedLabels
+              styles={{ input: { fontSize: 16 } }}
             />
           </Group>
 
