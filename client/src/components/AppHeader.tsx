@@ -1,5 +1,6 @@
-import { ActionIcon, Avatar, Group, Indicator, Menu, Select, Switch, Text } from '@mantine/core';
-import { IconBell, IconBellFilled, IconBellOff, IconHome, IconList } from '@tabler/icons-react';
+import { ActionIcon, Avatar, Divider, Drawer, Group, Indicator, Menu, Select, Stack, Switch, Text } from '@mantine/core';
+import { IconBell, IconBellFilled, IconBellOff, IconHome, IconList, IconSettings } from '@tabler/icons-react';
+import { useState } from 'react';
 import type { Account } from '../api';
 import { useConfig } from '../context/ConfigContext';
 
@@ -38,6 +39,7 @@ export default function AppHeader(props: Props) {
 
   const { useAbsoluteTime, toggleAbsoluteTime, limit } = useConfig();
   const selected = selectedAccount(accounts, selectedChannelId);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
     <Group h="100%" px={{ base: 'sm', sm: 'md' }} wrap="nowrap">
@@ -92,6 +94,16 @@ export default function AppHeader(props: Props) {
 
       <ActionIcon
         variant="outline"
+        color="blue"
+        size="lg"
+        onClick={() => setDrawerOpen(true)}
+        title="Settings"
+      >
+        <IconSettings size={18} />
+      </ActionIcon>
+
+      <ActionIcon
+        variant="outline"
         color={notifButtonColor(notifEnabled, notifLabel)}
         size="lg"
         onClick={onToggleNotif}
@@ -100,26 +112,42 @@ export default function AppHeader(props: Props) {
         {notifIcon(notifEnabled, notifLabel)}
       </ActionIcon>
 
-      <Switch
-        checked={useAbsoluteTime}
-        onChange={toggleAbsoluteTime}
+      <Drawer
+        opened={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        title="Settings"
         size="xs"
-        aria-label="Toggle absolute time"
-      />
+      >
+        <Divider mb="md" />
+        <Stack>
+          <Group wrap="nowrap" justify="space-between">
+            <Text size="sm">Use absolute time</Text>
+            <Switch
+              checked={useAbsoluteTime}
+              onChange={toggleAbsoluteTime}
+              size="sm"
+            />
+          </Group>
 
-      <Select
-        data={['5', '10', '20', '50', '100']}
-        value={String(limit)}
-        onChange={(v) => onChangeLimit(Number(v))}
-        size="xs"
-        w={64}
-        allowDeselect={false}
-        withAlignedLabels
-        styles={(t) => ({
-          input: { fontFamily: t.fontFamilyMonospace },
-          option: { fontFamily: t.fontFamilyMonospace },
-        })}
-      />
+          <Group wrap="nowrap" justify="space-between">
+            <Text size="sm">Limit</Text>
+            <Select
+              data={['5', '10', '20', '50', '100']}
+              value={String(limit)}
+              onChange={(v) => onChangeLimit(Number(v))}
+              size="sm"
+              w={80}
+              allowDeselect={false}
+              withAlignedLabels
+            />
+          </Group>
+
+          <Group wrap="nowrap" justify="space-between">
+            <Text size="sm">Version</Text>
+            <Text size="sm">{window.__VERSION__ || 'dev'}</Text>
+          </Group>
+        </Stack>
+      </Drawer>
 
       <Indicator
         color="green"

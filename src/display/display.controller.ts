@@ -13,6 +13,8 @@ export class DisplayController {
 
   @Get()
   index(@Res() res: Response) {
-    res.type('html').send(this.indexHtml);
+    const version = process.env.VERSION || 'dev';
+    const html = this.indexHtml.replace('{{VERSION}}', version);
+    res.type('html').send(html);
   }
 }
