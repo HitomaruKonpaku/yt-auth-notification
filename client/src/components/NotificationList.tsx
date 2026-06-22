@@ -1,13 +1,10 @@
 import { Center, Divider, Loader, Stack, Text } from '@mantine/core';
-import type { NotificationItem as NotifItem } from '../api';
+import { useData } from '../context/DataContext';
 import { useLoading } from '../context/LoadingContext';
 import NotificationItem from './NotificationItem';
 
-interface Props {
-  notifications: NotifItem[];
-}
-
-export default function NotificationList({ notifications }: Props) {
+export default function NotificationList() {
+  const { notifications } = useData();
   const { loading } = useLoading();
 
   if (loading) {
@@ -29,7 +26,7 @@ export default function NotificationList({ notifications }: Props) {
   return (
     <Stack gap={0}>
       {notifications.map((item) => (
-        <div key={item.id}>
+        <div key={item.id} data-id={item.id}>
           <NotificationItem item={item} />
           <Divider />
         </div>

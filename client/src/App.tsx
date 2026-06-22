@@ -1,7 +1,6 @@
 import { AppShell, Container, MantineProvider } from '@mantine/core';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  type Account,
   type NotificationItem,
   fetchAccounts,
   fetchNotifications,
@@ -11,6 +10,7 @@ import AppHeader from './components/AppHeader';
 import NotificationList from './components/NotificationList';
 import { readConfig, useConfig } from './context/ConfigContext';
 import { useLoading } from './context/LoadingContext';
+import { useData } from './context/DataContext';
 import { theme } from './theme';
 
 const DEFAULT_LIMIT = 10;
@@ -35,23 +35,23 @@ function writeUrl(channelId: string | null, limit: number, offset: number) {
 }
 
 export default function App() {
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-  const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
   const { limit, setLimit } = useConfig();
   const [offset, setOffset] = useState(0);
   const [total, setTotal] = useState(0);
   const { setLoading } = useLoading();
+  const {
+    selectedChannelId, setSelectedChannelId,
+    setAccounts, setNotifications,
+    addNewNotificationId,
+  } = useData();
   const [notifEnabled, setNotifEnabled] = useState(false);
   const [permission, setPermission] = useState(() =>
     'Notification' in window ? Notification.permission : 'denied'
   );
-  const [newCount, setNewCount] = useState(0);
   // Refs for SSE handler — avoids stale closure in the mount-time EventSource callback
   const channelRef = useRef<string | null>(null);
   const notifEnabledRef = useRef(false);
   const offsetRef = useRef(0);
-  const seenIds = useRef(new Set<string>());
 
   // Sync refs each render so SSE handler always sees latest values
   channelRef.current = selectedChannelId;
@@ -69,7 +69,7 @@ export default function App() {
       setNotifications([]);
     }
     setLoading(false);
-  }, []);
+  }, [setLoading, setNotifications]);
 
   const loadAccounts = useCallback(async () => {
     try {
@@ -78,7 +78,7 @@ export default function App() {
     } catch (err) {
       console.error('fetchAccounts failed:', err);
     }
-  }, []);
+  }, [setAccounts]);
 
   // Init: read URL, fetch data, start SSE
   useEffect(() => {
@@ -106,10 +106,8 @@ export default function App() {
       const item = data.item as NotificationItem;
 
       if (channelRef.current && item.owner_id !== channelRef.current) return;
-      if (seenIds.current.has(item.id)) return;
-      seenIds.current.add(item.id);
 
-      setNewCount((prev) => prev + 1);
+      addNewNotificationId(item.id);
 
       if (notifEnabledRef.current) {
         const notif = new Notification(item.short_message.text, {
@@ -154,7 +152,6 @@ export default function App() {
       setSelectedChannelId(ch);
       setLimit(l);
       setOffset(o);
-      setNewCount(0);
       loadNotifications(ch, l, o);
     };
     window.addEventListener('popstate', onPopState);
@@ -168,13 +165,11 @@ export default function App() {
   const selectChannel = useCallback((channelId: string | null) => {
     setSelectedChannelId(channelId);
     setOffset(0);
-    setNewCount(0);
     writeUrl(channelId, limit, 0);
     loadNotifications(channelId, limit, 0);
   }, [limit, loadNotifications]);
 
   const goTo = useCallback((newOffset: number) => {
-    setNewCount(0);
     setOffset(newOffset);
     writeUrl(selectedChannelId, limit, newOffset);
     loadNotifications(selectedChannelId, limit, newOffset);
@@ -197,11 +192,6 @@ export default function App() {
     });
   }, [notifEnabled]);
 
-  const resetNewCount = useCallback(() => {
-    setNewCount(0);
-    goTo(0);
-  }, [goTo]);
-
   const notifLabel = (() => {
     if (!('Notification' in window)) return 'unsupported';
     if (permission === 'denied') return 'blocked';
@@ -217,24 +207,18 @@ export default function App() {
         <AppShell.Header>
           <Container maw={800} h="100%" px={{ base: 0, sm: 'md' }}>
             <AppHeader
-              accounts={accounts}
-              selectedChannelId={selectedChannelId}
               notifEnabled={notifEnabled}
-              newCount={newCount}
               notifLabel={notifLabel}
               onSelectChannel={selectChannel}
               onToggleNotif={toggleNotif}
               onChangeLimit={changeLimit}
-              onResetNewCount={resetNewCount}
             />
           </Container>
         </AppShell.Header>
 
         <AppShell.Main>
           <Container maw={800} px={{ base: 0, sm: 'md' }}>
-            <NotificationList
-              notifications={notifications}
-            />
+            <NotificationList />
           </Container>
         </AppShell.Main>
 

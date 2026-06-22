@@ -1,19 +1,16 @@
 import { ActionIcon, Avatar, Code, Divider, Drawer, Group, Indicator, Menu, Select, Stack, Switch, Text } from '@mantine/core';
 import { IconBell, IconBellFilled, IconBellOff, IconHome, IconList, IconSettings } from '@tabler/icons-react';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import type { Account } from '../api';
 import { useConfig } from '../context/ConfigContext';
+import { useData } from '../context/DataContext';
 
 interface Props {
-  accounts: Account[];
-  selectedChannelId: string | null;
   notifEnabled: boolean;
-  newCount: number;
   notifLabel: string;
   onSelectChannel: (id: string | null) => void;
   onToggleNotif: () => void;
   onChangeLimit: (n: number) => void;
-  onResetNewCount: () => void;
 }
 
 const selectedAccount = (accounts: Account[], id: string | null): Account | null =>
@@ -33,13 +30,19 @@ const notifIcon = (enabled: boolean, label: string) => {
 
 export default function AppHeader(props: Props) {
   const {
-    accounts, selectedChannelId, notifEnabled, newCount, notifLabel,
-    onSelectChannel, onToggleNotif, onChangeLimit, onResetNewCount,
+    notifEnabled, notifLabel,
+    onSelectChannel, onToggleNotif, onChangeLimit,
   } = props;
 
+  const { accounts, selectedChannelId, newNotificationIds, resetNewNotificationIds } = useData();
+  const newCount = newNotificationIds.size;
   const { useAbsoluteTime, toggleAbsoluteTime, limit } = useConfig();
   const selected = selectedAccount(accounts, selectedChannelId);
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const onResetNewCount = useCallback(() => {
+    resetNewNotificationIds();
+  }, [resetNewNotificationIds]);
 
   return (
     <Group h="100%" px={{ base: 'sm', sm: 'md' }} wrap="nowrap">
@@ -150,8 +153,7 @@ export default function AppHeader(props: Props) {
       </Drawer>
 
       <Indicator
-        color="green"
-        processing={newCount > 0}
+        processing
         disabled={newCount === 0}
         offset={4}
         ml="auto"

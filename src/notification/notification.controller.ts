@@ -15,8 +15,6 @@ export class NotificationController {
     const result = await this.notificationService.getNotifications(+limit, +offset, channelId);
     return {
       total: result.total,
-      limit: result.limit,
-      offset: result.offset,
       items: result.items.map(item => enrichNotification(item)),
     };
   }

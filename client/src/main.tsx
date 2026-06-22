@@ -5,6 +5,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { ConfigProvider } from './context/ConfigContext';
+import { DataProvider } from './context/DataContext';
 import { LoadingProvider } from './context/LoadingContext';
 
 import App from './App';
@@ -15,7 +16,9 @@ if (root) {
     <StrictMode>
       <LoadingProvider>
         <ConfigProvider>
-          <App />
+          <DataProvider>
+            <App />
+          </DataProvider>
         </ConfigProvider>
       </LoadingProvider>
     </StrictMode>,

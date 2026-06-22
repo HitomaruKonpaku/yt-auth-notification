@@ -1,9 +1,10 @@
-import { DateTime } from 'luxon';
-import { Anchor, Avatar, Group, Image, Stack, Text } from '@mantine/core';
+import { Anchor, Avatar, Group, Image, Indicator, Stack, Text } from '@mantine/core';
 import { useHover } from '@mantine/hooks';
+import { DateTime } from 'luxon';
 import { useEffect, useState } from 'react';
 import type { NotificationItem as NotifItem } from '../api';
 import { useConfig } from '../context/ConfigContext';
+import { useData } from '../context/DataContext';
 
 interface Props {
   item: NotifItem;
@@ -12,6 +13,8 @@ interface Props {
 export default function NotificationItem({ item }: Props) {
   const { hovered, ref } = useHover();
   const { useAbsoluteTime } = useConfig();
+  const { newNotificationIds, dismissNewNotificationId } = useData();
+  const isNew = newNotificationIds.has(item.id);
   const [, setTick] = useState(0);
 
   useEffect(() => {
@@ -30,12 +33,21 @@ export default function NotificationItem({ item }: Props) {
       gap="sm"
       align="flex-start"
       py="sm"
-      px="sm"
+      px="md"
       wrap="nowrap"
       bg={hovered ? 'dark.4' : undefined}
-      style={{ cursor: item._url ? 'pointer' : 'default' }}
     >
-      <Avatar src={item.thumbnail_url} radius="md" size="lg" />
+      <Indicator
+        processing
+        position="middle-start"
+        offset={-9}
+        disabled={!isNew}
+        size={11}
+        withBorder
+        zIndex={0}
+      >
+        <Avatar src={item.thumbnail_url} radius="md" size="lg" />
+      </Indicator>
       <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
         <Text size="sm" ta="justify">{item.short_message.text}</Text>
         <Text size="xs" ff="monospace">{timeDisplay}</Text>
@@ -55,10 +67,21 @@ export default function NotificationItem({ item }: Props) {
 
   if (item._url) {
     return (
-      <Anchor href={item._url} target="_blank" rel="noopener" underline="never" c="inherit">
+      <Anchor
+        href={item._url}
+        target="_blank"
+        rel="noopener"
+        underline="never"
+        c="inherit"
+        onClick={() => dismissNewNotificationId(item.id)}
+      >
         {content}
       </Anchor>
     );
   }
-  return <div>{content}</div>;
+  return (
+    <div onClick={() => dismissNewNotificationId(item.id)} style={{ cursor: 'pointer' }}>
+      {content}
+    </div>
+  );
 }

@@ -1,6 +1,12 @@
 # yt-auth-notification
 
-Forward your YouTube notifications to Discord and browse them on a clean web dashboard. Never miss a livestream, comment reply, or channel upload again.
+Forward your YouTube notifications to Discord and browse them on a clean web dashboard.
+
+New notifications are highlighted with a live indicator and can be dismissed with a click.
+
+Filter by channel, toggle browser notifications, and paginate through history.
+
+Never miss a livestream, comment reply, or channel upload again.
 
 ## Quick Start
 
@@ -35,30 +41,6 @@ webhooks:
 ```
 
 Both `interval` and `webhooks.discord` are optional — defaults to 60s polling with no relay.
-
-## API
-
-### `GET /api/notifications?limit=50&offset=0`
-
-```json
-{
-  "total": 420,
-  "limit": 50,
-  "offset": 0,
-  "items": [
-    {
-      "id": "1781444560063061",
-      "created_at": 1750000000000,
-      "sent_at": 1781444560063,
-      "video_id": "vxMFIDwTVZM",
-      "linked_comment_id": null,
-      "endpoint_url": "/watch?v=vxMFIDwTVZM",
-      "short_message": { "text": "👍 Someone liked your comment", "rtl": false },
-      "thumbnail_url": "https://..."
-    }
-  ]
-}
-```
 
 ## Docker
 
