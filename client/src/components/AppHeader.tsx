@@ -57,7 +57,7 @@ export default function AppHeader(props: Props) {
         <IconHome size={22} />
       </ActionIcon>
 
-      <Menu shadow="md" width={260}>
+      <Menu shadow="md" width={260} transitionProps={{ transition: 'fade-up' }}>
         <Menu.Target>
           <ActionIcon
             variant="outline"

@@ -117,6 +117,9 @@ export default function App() {
         notif.onclick = () => {
           window.focus();
           notif.close();
+          setOffset(0);
+          writeUrl(channelRef.current, limit, 0);
+          loadNotifications(channelRef.current, limit, 0);
         };
         const audio = new Audio('/se_chat_announce.ogg');
         audio.onerror = () => console.error('Audio failed to load or decode');
