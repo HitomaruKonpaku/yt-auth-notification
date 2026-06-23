@@ -1,6 +1,6 @@
 import { ActionIcon, Avatar, Code, Divider, Drawer, Group, Indicator, Menu, Select, Stack, Switch, Text } from '@mantine/core';
-import { IconBell, IconBellFilled, IconBellOff, IconHome, IconList, IconSettings } from '@tabler/icons-react';
-import { useCallback, useState } from 'react';
+import { IconBell, IconBellFilled, IconBellOff, IconHome, IconList, IconRefresh, IconSettings } from '@tabler/icons-react';
+import { useCallback } from 'react';
 import type { Account } from '../api';
 import { useConfig } from '../context/ConfigContext';
 import { useData } from '../context/DataContext';
@@ -8,9 +8,13 @@ import { useData } from '../context/DataContext';
 interface Props {
   notifEnabled: boolean;
   notifLabel: string;
+  settingsOpen: boolean;
+  onSettingsOpen: () => void;
+  onSettingsClose: () => void;
   onSelectChannel: (id: string | null) => void;
   onToggleNotif: () => void;
   onChangeLimit: (n: number) => void;
+  onReload: () => void;
 }
 
 const selectedAccount = (accounts: Account[], id: string | null): Account | null =>
@@ -31,21 +35,21 @@ const notifIcon = (enabled: boolean, label: string) => {
 export default function AppHeader(props: Props) {
   const {
     notifEnabled, notifLabel,
-    onSelectChannel, onToggleNotif, onChangeLimit,
+    settingsOpen, onSettingsOpen, onSettingsClose,
+    onSelectChannel, onToggleNotif, onChangeLimit, onReload,
   } = props;
 
   const { accounts, selectedChannelId, newNotificationIds, resetNewNotificationIds } = useData();
   const newCount = newNotificationIds.size;
   const { useAbsoluteTime, toggleAbsoluteTime, limit } = useConfig();
   const selected = selectedAccount(accounts, selectedChannelId);
-  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const onResetNewCount = useCallback(() => {
     resetNewNotificationIds();
   }, [resetNewNotificationIds]);
 
   return (
-    <Group h="100%" px={{ base: 'sm', sm: 'md' }} wrap="nowrap">
+    <Group h="100%" gap="sm" px={{ base: 'sm', sm: 'md' }} wrap="nowrap">
       <ActionIcon
         component="a"
         href="/"
@@ -99,8 +103,8 @@ export default function AppHeader(props: Props) {
         variant="outline"
         color="blue"
         size="lg"
-        onClick={() => setDrawerOpen(true)}
-        title="Settings"
+        onClick={onSettingsOpen}
+        title="Settings (Ctrl+,)"
       >
         <IconSettings size={18} />
       </ActionIcon>
@@ -116,8 +120,8 @@ export default function AppHeader(props: Props) {
       </ActionIcon>
 
       <Drawer
-        opened={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
+        opened={settingsOpen}
+        onClose={onSettingsClose}
         title="Settings"
         size="xs"
       >
@@ -152,22 +156,33 @@ export default function AppHeader(props: Props) {
         </Stack>
       </Drawer>
 
-      <Indicator
-        processing
-        disabled={newCount === 0}
-        offset={4}
-        ml="auto"
-      >
+      <Group gap="sm" ml="auto" wrap="nowrap">
         <ActionIcon
           variant="subtle"
           color="blue"
           size="lg"
-          onClick={onResetNewCount}
-          title="New notifications"
+          onClick={onReload}
+          title="Reload (R)"
         >
-          <IconBell size={18} />
+          <IconRefresh size={18} />
         </ActionIcon>
-      </Indicator>
+
+        <Indicator
+          processing
+          disabled={newCount === 0}
+          offset={4}
+        >
+          <ActionIcon
+            variant="subtle"
+            color="blue"
+            size="lg"
+            onClick={onResetNewCount}
+            title="New notifications"
+          >
+            <IconBell size={18} />
+          </ActionIcon>
+        </Indicator>
+      </Group>
     </Group>
   );
 }

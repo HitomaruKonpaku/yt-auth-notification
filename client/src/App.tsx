@@ -1,14 +1,17 @@
 import { AppShell, Container, MantineProvider } from '@mantine/core';
+import { notifications, Notifications } from '@mantine/notifications';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   type NotificationItem,
   fetchAccounts,
   fetchNotifications,
 } from './api';
+import { setErrorHandler } from './error';
 import AppFooter from './components/AppFooter';
 import AppHeader from './components/AppHeader';
 import NotificationList from './components/NotificationList';
 import { readConfig, useConfig } from './context/ConfigContext';
+import { HotkeyProvider, type HotkeyActions } from './context/HotkeyContext';
 import { useLoading } from './context/LoadingContext';
 import { useData } from './context/DataContext';
 import { theme } from './theme';
@@ -45,6 +48,7 @@ export default function App() {
     addNewNotificationId,
   } = useData();
   const [notifEnabled, setNotifEnabled] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [permission, setPermission] = useState(() =>
     'Notification' in window ? Notification.permission : 'denied'
   );
@@ -57,6 +61,26 @@ export default function App() {
   channelRef.current = selectedChannelId;
   notifEnabledRef.current = notifEnabled;
   offsetRef.current = offset;
+
+  // Wire error notification bus — mount once
+  useEffect(() => {
+    const seen = new Map<string, string>();
+    setErrorHandler((key, title, message) => {
+      const existing = seen.get(key);
+      if (existing) {
+        notifications.hide(existing);
+      }
+      const id = notifications.show({
+        title,
+        message,
+        color: 'red',
+        autoClose: 5000,
+        position: 'top-right',
+      });
+      seen.set(key, id);
+    });
+    return () => setErrorHandler(() => {});
+  }, []);
 
   const loadNotifications = useCallback(async (chanId: string | null, lim: number, off: number) => {
     setLoading(true);
@@ -185,6 +209,19 @@ export default function App() {
     loadNotifications(selectedChannelId, newLimit, 0);
   }, [selectedChannelId, setLimit, loadNotifications]);
 
+  const reload = useCallback(() => {
+    loadNotifications(selectedChannelId, limit, offset);
+  }, [selectedChannelId, limit, offset, loadNotifications]);
+
+  const hotkeyActions: HotkeyActions = {
+    reload,
+    prevPage: () => goTo(Math.max(0, offset - limit)),
+    nextPage: () => goTo(offset + limit),
+    firstPage: () => goTo(0),
+    lastPage: () => goTo(Math.max(0, Math.ceil(total / limit) - 1) * limit),
+    toggleSettings: () => setSettingsOpen((prev) => !prev),
+  };
+
   const toggleNotif = useCallback(() => {
     if (!('Notification' in window)) return;
     if (notifEnabled) return; // once enabled, stays enabled
@@ -203,19 +240,25 @@ export default function App() {
 
   return (
     <MantineProvider defaultColorScheme="dark" theme={theme}>
-      <AppShell
-        header={{ height: 50 }}
-        footer={{ height: 50 }}
-      >
-        <AppShell.Header>
-          <Container maw={800} h="100%" px={{ base: 0, sm: 'md' }}>
-            <AppHeader
-              notifEnabled={notifEnabled}
-              notifLabel={notifLabel}
-              onSelectChannel={selectChannel}
-              onToggleNotif={toggleNotif}
-              onChangeLimit={changeLimit}
-            />
+      <Notifications position="top-right" />
+      <HotkeyProvider actions={hotkeyActions}>
+        <AppShell
+          header={{ height: 50 }}
+          footer={{ height: 50 }}
+        >
+          <AppShell.Header>
+            <Container maw={800} h="100%" px={{ base: 0, sm: 'md' }}>
+              <AppHeader
+                notifEnabled={notifEnabled}
+                notifLabel={notifLabel}
+                settingsOpen={settingsOpen}
+                onSettingsOpen={() => setSettingsOpen(true)}
+                onSettingsClose={() => setSettingsOpen(false)}
+                onSelectChannel={selectChannel}
+                onToggleNotif={toggleNotif}
+                onChangeLimit={changeLimit}
+                onReload={reload}
+              />
           </Container>
         </AppShell.Header>
 
@@ -236,6 +279,7 @@ export default function App() {
           </Container>
         </AppShell.Footer>
       </AppShell>
+      </HotkeyProvider>
     </MantineProvider>
   );
 }

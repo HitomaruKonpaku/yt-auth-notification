@@ -1,3 +1,5 @@
+import { notifyApiError } from './error';
+
 export interface Account {
   id: string;
   handle: string;
@@ -44,6 +46,7 @@ export async function fetchNotifications(params: {
   }
   const res = await fetch(`/api/notifications?${searchParams.toString()}`);
   if (!res.ok) {
+    notifyApiError('GET', '/api/notifications', res.status, res.statusText);
     throw new Error(`HTTP ${res.status}: ${res.statusText}`);
   }
   return res.json();
@@ -52,6 +55,7 @@ export async function fetchNotifications(params: {
 export async function fetchAccounts(): Promise<AccountsResponse> {
   const res = await fetch('/api/accounts');
   if (!res.ok) {
+    notifyApiError('GET', '/api/accounts', res.status, res.statusText);
     throw new Error(`HTTP ${res.status}: ${res.statusText}`);
   }
   return res.json();
