@@ -44,19 +44,21 @@ export async function fetchNotifications(params: {
   if (params.channelId) {
     searchParams.set('channel_id', params.channelId);
   }
-  const res = await fetch(`/api/notifications?${searchParams.toString()}`);
-  if (!res.ok) {
-    notifyApiError('GET', '/api/notifications', res.status, res.statusText);
-    throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+  try {
+    const res = await fetch(`/api/notifications?${searchParams.toString()}`);
+    return res.json();
+  } catch (err) {
+    notifyApiError('GET', '/api/notifications', String(err));
+    throw err;
   }
-  return res.json();
 }
 
 export async function fetchAccounts(): Promise<AccountsResponse> {
-  const res = await fetch('/api/accounts');
-  if (!res.ok) {
-    notifyApiError('GET', '/api/accounts', res.status, res.statusText);
-    throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+  try {
+    const res = await fetch('/api/accounts');
+    return res.json();
+  } catch (err) {
+    notifyApiError('GET', '/api/accounts', String(err));
+    throw err;
   }
-  return res.json();
 }

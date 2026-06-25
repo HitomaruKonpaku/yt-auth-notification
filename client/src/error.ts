@@ -9,8 +9,7 @@ export function setErrorHandler(fn: ErrorHandler): void {
 export function notifyApiError(
   method: string,
   path: string,
-  status: number,
-  statusText: string,
+  message: string,
 ): void {
-  handler?.(`${method} ${path}`, `API Error: ${status}`, `${method} ${path}: ${statusText || status}`);
+  handler?.(`${method}:${path}`, `API Error`, `${method} ${path}: ${message}`);
 }
