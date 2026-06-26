@@ -10,11 +10,15 @@ export class ChannelRepo {
     private readonly repo: Repository<Channel>,
   ) { }
 
-  async upsert(channel: Partial<Channel>): Promise<void> {
-    await this.repo.upsert(channel, { conflictPaths: ['id'] });
-  }
-
   async exists(id: string): Promise<boolean> {
     return this.repo.exists({ where: { id } });
+  }
+
+  async findById(id: string): Promise<Channel | null> {
+    return this.repo.findOne({ where: { id } });
+  }
+
+  async upsert(channel: Partial<Channel>): Promise<void> {
+    await this.repo.upsert(channel, { conflictPaths: ['id'] });
   }
 }

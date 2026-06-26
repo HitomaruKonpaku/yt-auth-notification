@@ -45,4 +45,10 @@ describe('parseAuthorName', () => {
     const long = 'A'.repeat(100) + ' no known delimiter here';
     expect(parseAuthorName(long)).toBe('A'.repeat(50));
   });
+
+  it('should extract name from "Watch ... live in ..." pattern', () => {
+    expect(parseAuthorName(
+      'Watch Nakiri Ayame Ch. 百鬼あやめ live in 30 minutes: 【ブレインスリープ】視聴者アンケート紹介！余とすやすやし余？✨【百鬼あやめ/ホロライブ】'
+    )).toBe('Nakiri Ayame Ch. 百鬼あやめ');
+  });
 });

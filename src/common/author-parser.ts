@@ -33,6 +33,13 @@ export function parseAuthorName(text: string): string {
     return cleaned.slice(0, AUTHOR_NAME_FALLBACK_MAX_LENGTH).trim();
   }
 
+  // "Watch <name> live in <time>: ..." pattern
+  if (cleaned.startsWith('Watch ') && cleaned.includes(' live in')) {
+    const afterWatch = cleaned.slice(6);
+    const liveIdx = afterWatch.indexOf(' live in');
+    return afterWatch.slice(0, liveIdx).trim();
+  }
+
   const fromAtIdx = cleaned.indexOf(FROM_AT_PREFIX);
   if (fromAtIdx !== -1) {
     const afterFrom = cleaned.slice(fromAtIdx + 6); // length of ' from '

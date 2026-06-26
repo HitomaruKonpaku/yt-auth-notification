@@ -1,18 +1,24 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '../config/config.service';
+import { AccountService } from '../account/account.service';
+import { ChannelService } from '../channel/channel.service';
 import { parseAuthorName } from '../common/author-parser';
-import { buildYtVideoThumbnailUrl, buildYtEndpointUrl } from '../common/link-builder';
+import { buildYtEndpointUrl, buildYtVideoThumbnailUrl } from '../common/link-builder';
+import { ConfigService } from '../config/config.service';
 import type { NotificationLike } from '../notification/notification.interface';
 
 @Injectable()
 export class DiscordService {
   private readonly logger = new Logger(DiscordService.name);
 
-  constructor(private readonly configService: ConfigService) { }
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly accountService: AccountService,
+    private readonly channelService: ChannelService,
+  ) { }
 
   async relayNotification(notif: NotificationLike) {
     const webhooks = this.configService.getConfig().webhooks!.discord!;
-    const embed = this.buildEmbed(notif);
+    const embed = await this.buildEmbed(notif);
 
     for (const webhook of webhooks) {
       try {
@@ -38,7 +44,7 @@ export class DiscordService {
     }
   }
 
-  private buildEmbed(notif: NotificationLike) {
+  private async buildEmbed(notif: NotificationLike) {
     const shortMsg = notif.short_message;
     const text: string = shortMsg.text || '';
     const authorName = parseAuthorName(text);
@@ -64,6 +70,45 @@ export class DiscordService {
       embed.thumbnail = { url: buildYtVideoThumbnailUrl(notif.video_id) };
     }
 
+    if (notif.owner_id) {
+      const footer = await this.buildFooter(notif.owner_id);
+      if (footer) {
+        embed.footer = footer;
+      }
+    }
+
     return embed;
+  }
+
+  private async buildFooter(ownerId: string): Promise<Record<string, any> | null> {
+    try {
+      let handle: string | undefined;
+      let iconUrl: string | undefined;
+
+      const account = this.accountService.get(ownerId);
+      if (account) {
+        handle = account.handle;
+        iconUrl = account.thumbnail_url;
+      } else {
+        const channel = await this.channelService.findById(ownerId);
+        if (channel) {
+          handle = channel.handle;
+          iconUrl = channel.thumbnail_url;
+        }
+      }
+
+      if (!handle) {
+        return null;
+      }
+
+      const footer: Record<string, any> = { text: '@' + handle };
+      if (iconUrl) {
+        footer.icon_url = iconUrl;
+      }
+
+      return footer;
+    } catch {
+      return null;
+    }
   }
 }
