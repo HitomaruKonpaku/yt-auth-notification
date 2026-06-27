@@ -80,7 +80,7 @@ export class NotificationService {
 
     try {
       await this.postRepo.upsert({
-        post_id: parsed.post_id,
+        id: parsed.post_id,
         channel_id: parsed.channel_id,
         created_at: row.sent_at,
       });

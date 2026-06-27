@@ -91,7 +91,7 @@ describe('NotificationService', () => {
     const result = await service.processNotifications(raw as any, 'UC123');
     expect(result[0].post_id).toBe('Ugkx5Xl24OdffGL5l2UeHOWgX_Gt-dSYBiHv');
     expect(postRepo.upsert).toHaveBeenCalledWith({
-      post_id: 'Ugkx5Xl24OdffGL5l2UeHOWgX_Gt-dSYBiHv',
+      id: 'Ugkx5Xl24OdffGL5l2UeHOWgX_Gt-dSYBiHv',
       channel_id: 'UCIjdfjcSaEgdjwbgjxC3ZWg',
       created_at: expect.any(Number),
     });

@@ -11,6 +11,6 @@ export class PostRepo {
   ) { }
 
   async upsert(post: Partial<Post>): Promise<void> {
-    await this.repo.upsert(post, { conflictPaths: ['post_id'] });
+    await this.repo.upsert(post, { conflictPaths: ['id'] });
   }
 }

@@ -24,17 +24,17 @@ describe('PostRepo', () => {
 
   it('should upsert a post row', async () => {
     await repo.upsert({
-      post_id: 'Ugkx5Xl24OdffGL5l2UeHOWgX_Gt-dSYBiHv',
+      id: 'Ugkx5Xl24OdffGL5l2UeHOWgX_Gt-dSYBiHv',
       channel_id: 'UCIjdfjcSaEgdjwbgjxC3ZWg',
       created_at: 1781516553,
     });
     expect(mockRepo.upsert).toHaveBeenCalledWith(
       {
-        post_id: 'Ugkx5Xl24OdffGL5l2UeHOWgX_Gt-dSYBiHv',
+        id: 'Ugkx5Xl24OdffGL5l2UeHOWgX_Gt-dSYBiHv',
         channel_id: 'UCIjdfjcSaEgdjwbgjxC3ZWg',
         created_at: 1781516553,
       },
-      { conflictPaths: ['post_id'] },
+      { conflictPaths: ['id'] },
     );
   });
 });

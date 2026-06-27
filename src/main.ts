@@ -5,6 +5,7 @@ import 'dotenv/config';
 import { DateTime } from 'luxon';
 import { join } from 'path';
 import { AppModule } from './app.module';
+import { runMigrations } from './db/migrate';
 import { PollingService } from './polling/polling.service';
 
 class FmtLogger extends ConsoleLogger {
@@ -14,6 +15,8 @@ class FmtLogger extends ConsoleLogger {
 }
 
 async function bootstrap() {
+  runMigrations();
+
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { logger: new FmtLogger() });
   const logger = new Logger('Bootstrap');
 

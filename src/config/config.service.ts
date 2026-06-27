@@ -22,14 +22,14 @@ export class ConfigService {
       throw new Error(`Failed to parse config file: ${configPath}`, { cause: err });
     }
 
-    const data = raw || {};
+    const data: Record<string, any> = raw || {};
     const discordRaw: DiscordWebhookConfig[] = data?.webhooks?.discord || [];
 
     this.config = {
-      interval: data.interval ?? 60,
-      maxBackoffMs: data.maxBackoffMs ?? 30 * 60 * 1000,
-      sseKeepaliveMs: data.sseKeepaliveMs ?? 30000,
-      accountInitRetries: data.accountInitRetries ?? 3,
+      interval: Number(data.interval) || 60,
+      maxBackoffMs: Number(data.maxBackoffMs) || 30 * 60 * 1000,
+      sseKeepaliveMs: Number(data.sseKeepaliveMs) || 30000,
+      accountInitRetries: Number(data.accountInitRetries) || 3,
       webhooks: {
         discord: discordRaw
           .filter(w => typeof w.url === 'string' && w.url.length > 0)
