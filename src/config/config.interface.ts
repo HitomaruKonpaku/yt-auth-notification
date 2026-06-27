@@ -11,6 +11,12 @@ export interface AppConfig {
   interval?: number;
 
   /**
+   * Whether to fetch full post content (text + attachments) via Innertube.
+   * @default false
+   */
+  fetchPost?: boolean;
+
+  /**
    * Maximum exponential backoff cap in milliseconds.
    * @default 1800000 (30 minutes)
    */

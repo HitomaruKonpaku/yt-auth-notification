@@ -22,11 +22,12 @@ export class ConfigService {
       throw new Error(`Failed to parse config file: ${configPath}`, { cause: err });
     }
 
-    const data: Record<string, any> = raw || {};
+    const data: Partial<AppConfig> & Record<string, any> = raw || {};
     const discordRaw: DiscordWebhookConfig[] = data?.webhooks?.discord || [];
 
     this.config = {
       interval: Number(data.interval) || 60,
+      fetchPost: Boolean(data.fetchPost) || false,
       maxBackoffMs: Number(data.maxBackoffMs) || 30 * 60 * 1000,
       sseKeepaliveMs: Number(data.sseKeepaliveMs) || 30000,
       accountInitRetries: Number(data.accountInitRetries) || 3,

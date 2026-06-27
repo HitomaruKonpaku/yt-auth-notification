@@ -14,18 +14,22 @@ export class YTProvider {
     });
   }
 
+  getYt(channelId: string): Innertube | undefined {
+    return this.yts.get(channelId);
+  }
+
   deleteYt(channelId: string): void {
     this.yts.delete(channelId);
   }
 
-  async getYt(channelId: string, pageId?: string): Promise<Innertube> {
+  async initYt(channelId: string, pageId?: string): Promise<Innertube> {
     const existing = this.yts.get(channelId);
     if (existing) {
       return existing;
     }
 
     const cookie = this.cookieService.getCookieString();
-    const opts:Types.InnerTubeConfig  = { cookie };
+    const opts: Types.InnerTubeConfig = { cookie };
     if (pageId) {
       opts.on_behalf_of_user = pageId;
     }

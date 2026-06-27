@@ -3,11 +3,14 @@ import { NotificationService } from './notification.service';
 import { NotificationRepo } from './notification.repo';
 import { PostRepo } from '../post/post.repo';
 import { SseService } from '../sse/sse.service';
+import { ConfigService } from '../config/config.service';
+import { PostService } from '../post/post.service';
 
 describe('NotificationService', () => {
   let service: NotificationService;
   let repo: { upsertAll: jest.Mock; findAll: jest.Mock };
   let postRepo: { upsert: jest.Mock };
+  let postService: { registerOwner: jest.Mock };
   let sseService: { push: jest.Mock; subject: { next: jest.Mock } };
 
   const makeRaw = (id: string, text: string, opts?: { videoId?: string; linkedCommentId?: string; browseId?: string; params?: string }) => ({
@@ -30,13 +33,17 @@ describe('NotificationService', () => {
   beforeEach(async () => {
     repo = { upsertAll: jest.fn().mockResolvedValue([]), findAll: jest.fn() };
     postRepo = { upsert: jest.fn() };
+    postService = { registerOwner: jest.fn() };
     sseService = { push: jest.fn(), subject: { next: jest.fn() } };
+    const configService = { getConfig: jest.fn().mockReturnValue({}) };
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         NotificationService,
         { provide: NotificationRepo, useValue: repo },
         { provide: PostRepo, useValue: postRepo },
+        { provide: PostService, useValue: postService },
         { provide: SseService, useValue: sseService },
+        { provide: ConfigService, useValue: configService },
       ],
     }).compile();
     service = module.get<NotificationService>(NotificationService);
@@ -105,6 +112,38 @@ describe('NotificationService', () => {
     // Should still set post_id on the row even if upsert failed
     expect(result[0].post_id).toBe('Ugkx5Xl24OdffGL5l2UeHOWgX_Gt-dSYBiHv');
     expect(result).toHaveLength(1);
+  });
+
+  it('should register owner when fetchPost is enabled', async () => {
+    const configWithFetch = { getConfig: jest.fn().mockReturnValue({ fetchPost: true }) };
+    const localModule = await Test.createTestingModule({
+      providers: [
+        NotificationService,
+        { provide: NotificationRepo, useValue: { upsertAll: jest.fn().mockResolvedValue(['8000']), findAll: jest.fn() } },
+        { provide: PostRepo, useValue: { upsert: jest.fn() } },
+        { provide: PostService, useValue: { registerOwner: jest.fn() } },
+        { provide: SseService, useValue: { push: jest.fn(), subject: { next: jest.fn() } } },
+        { provide: ConfigService, useValue: configWithFetch },
+      ],
+    }).compile();
+    const localService = localModule.get<NotificationService>(NotificationService);
+    const localPostService = localModule.get<{ registerOwner: jest.Mock }>(PostService as any);
+
+    const raw = [makeRaw('8000', 'Members post', { browseId: 'FEpost_detail', params: FE_POST_PARAMS, videoId: undefined })];
+    await localService.processNotifications(raw as any, 'UC123');
+
+    expect(localPostService.registerOwner).toHaveBeenCalledWith(
+      'Ugkx5Xl24OdffGL5l2UeHOWgX_Gt-dSYBiHv',
+      'UC123',
+    );
+  });
+
+  it('should not register owner when fetchPost is disabled (default)', async () => {
+    repo.upsertAll.mockResolvedValue(['8000']);
+    const raw = [makeRaw('8000', 'Members post', { browseId: 'FEpost_detail', params: FE_POST_PARAMS, videoId: undefined })];
+    await service.processNotifications(raw as any, 'UC123');
+
+    expect(postService.registerOwner).not.toHaveBeenCalled();
   });
 
   it('should not parse non-FEpost_detail notifications', async () => {

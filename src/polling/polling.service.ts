@@ -4,6 +4,7 @@ import { AccountService } from '../account/account.service';
 import { ConfigService } from '../config/config.service';
 import { DiscordService } from '../discord/discord.service';
 import { NotificationService } from '../notification/notification.service';
+import { PostService } from '../post/post.service';
 import { YTProvider } from '../youtube/yt.provider';
 
 @Injectable()
@@ -16,9 +17,10 @@ export class PollingService {
 
   constructor(
     private readonly configService: ConfigService,
-    private readonly accountService: AccountService,
     private readonly ytProvider: YTProvider,
+    private readonly accountService: AccountService,
     private readonly notificationService: NotificationService,
+    private readonly postService: PostService,
     private readonly discordService: DiscordService,
   ) {
     this.currentWaitMs = this.getIntervalMs();
@@ -41,13 +43,17 @@ export class PollingService {
     try {
       // Lazy init: discover accounts on first poll via the active session
       if (!this.accountService.isInitialized) {
-        const activeYt = await this.ytProvider.getYt('__active__');
+        const activeYt = await this.ytProvider.initYt('__active__');
         await this.accountService.initialize(activeYt);
         this.ytProvider.deleteYt('__active__');
       }
 
       for (const [channelId] of this.accountService.accounts) {
         await this.pollChannel(channelId);
+      }
+
+      if (this.configService.getConfig().fetchPost) {
+        await this.postService.pollPosts();
       }
 
       this.isFirstPoll = false;
@@ -72,7 +78,7 @@ export class PollingService {
         return;
       }
 
-      const yt = await this.ytProvider.getYt(channelId, account.pageId);
+      const yt = await this.ytProvider.initYt(channelId, account.pageId);
 
       this.logger.debug(`[${channelId}] yt.getNotifications()`);
       const menu: YT.NotificationsMenu = await yt.getNotifications();

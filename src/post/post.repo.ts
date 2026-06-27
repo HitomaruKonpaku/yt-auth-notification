@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { Post } from '../db/post.entity';
 
 @Injectable()
@@ -10,7 +10,22 @@ export class PostRepo {
     private readonly repo: Repository<Post>,
   ) { }
 
+  async findUnfetched(): Promise<Pick<Post, 'id' | 'channel_id'>[]> {
+    return this.repo.find({
+      select: { id: true, channel_id: true },
+      where: { fetched_at: IsNull() },
+    });
+  }
+
   async upsert(post: Partial<Post>): Promise<void> {
     await this.repo.upsert(post, { conflictPaths: ['id'] });
+  }
+
+  async update(id: string, partial: Partial<Post>): Promise<void> {
+    await this.repo.update({ id }, partial);
+  }
+
+  async findById(id: string): Promise<Post | null> {
+    return this.repo.findOne({ where: { id } });
   }
 }

@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { IsNull } from 'typeorm';
 import { PostRepo } from './post.repo';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Post } from '../db/post.entity';
@@ -10,6 +11,8 @@ describe('PostRepo', () => {
   beforeEach(async () => {
     mockRepo = {
       upsert: jest.fn(),
+      find: jest.fn(),
+      update: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -35,6 +38,32 @@ describe('PostRepo', () => {
         created_at: 1781516553,
       },
       { conflictPaths: ['id'] },
+    );
+  });
+
+  it('should find posts where fetched_at is null', async () => {
+    const posts = [
+      { id: 'p1', channel_id: 'UC1', fetched_at: null },
+      { id: 'p2', channel_id: 'UC2', fetched_at: null },
+    ];
+    mockRepo.find.mockResolvedValue(posts);
+
+    const result = await repo.findUnfetched();
+
+    expect(mockRepo.find).toHaveBeenCalledWith({
+      select: { id: true, channel_id: true },
+      where: { fetched_at: IsNull() },
+    });
+    expect(result).toHaveLength(2);
+    expect(result[0].id).toBe('p1');
+  });
+
+  it('should update a post row by id', async () => {
+    await repo.update('p1', { fetched_at: 123456, updated_at: 123456 });
+
+    expect(mockRepo.update).toHaveBeenCalledWith(
+      { id: 'p1' },
+      { fetched_at: 123456, updated_at: 123456 },
     );
   });
 });

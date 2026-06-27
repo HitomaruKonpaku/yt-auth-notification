@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { YTNodes } from 'youtubei.js';
 import { decodePostParams } from '../common/params-parser';
+import { ConfigService } from '../config/config.service';
+import { PostService } from '../post/post.service';
 import { PostRepo } from '../post/post.repo';
 import { SseService } from '../sse/sse.service';
 import type { NotificationLike } from './notification.interface';
@@ -14,7 +16,9 @@ export class NotificationService {
   constructor(
     private readonly repo: NotificationRepo,
     private readonly postRepo: PostRepo,
+    private readonly postService: PostService,
     private readonly sseService: SseService,
+    private readonly configService: ConfigService,
   ) { }
 
   async getNotifications(limit: number, offset: number, channelId?: string) {
@@ -37,7 +41,7 @@ export class NotificationService {
         thumbnail_url: n.thumbnails[0]?.url,
       };
 
-      await this.tryParsePost(n, row);
+      await this.tryParsePost(n, row, ownerId);
 
       rows.push(row);
     }
@@ -46,7 +50,7 @@ export class NotificationService {
     const newItems = rows.filter(r => insertedIds.includes(r.id));
 
     if (newItems.length > 0) {
-      this.logger.log(`Inserted ${newItems.length} new notifications`);
+      this.logger.log(`processNotifications: inserted ${newItems.length} new`);
     }
 
     for (const item of newItems) {
@@ -58,7 +62,7 @@ export class NotificationService {
     return newItems;
   }
 
-  private async tryParsePost(n: YTNodes.Notification, row: NotificationLike) {
+  private async tryParsePost(n: YTNodes.Notification, row: NotificationLike, ownerId?: string) {
     if (n.endpoint.payload?.browseId !== 'FEpost_detail' || !n.endpoint.payload?.params) {
       return;
     }
@@ -85,7 +89,11 @@ export class NotificationService {
         created_at: row.sent_at,
       });
     } catch (err) {
-      this.logger.warn('Failed to upsert post', err);
+      this.logger.warn('tryParsePost: failed to upsert post', err);
+    }
+
+    if (this.configService.getConfig().fetchPost && ownerId) {
+      this.postService.registerOwner(parsed.post_id, ownerId);
     }
   }
 }

@@ -1,5 +1,7 @@
 interval: 60
 
+# fetchPost: true
+
 webhooks:
   discord:
     - url: https://discord.com/api/webhooks/...

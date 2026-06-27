@@ -93,5 +93,16 @@ describe('ConfigService', () => {
 
       expect(config.webhooks!.discord![0].msg).toBe('');
     });
+
+    it('should default fetchPost to false', () => {
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
+      (fs.readFileSync as jest.Mock).mockReturnValue('empty');
+      (yaml.load as jest.Mock).mockReturnValue({});
+
+      service = new ConfigService();
+      const config = service.getConfig();
+
+      expect(config.fetchPost).toBe(false);
+    });
   });
 });
