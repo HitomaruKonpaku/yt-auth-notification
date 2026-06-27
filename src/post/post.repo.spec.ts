@@ -51,7 +51,7 @@ describe('PostRepo', () => {
     const result = await repo.findUnfetched();
 
     expect(mockRepo.find).toHaveBeenCalledWith({
-      select: { id: true, channel_id: true },
+      select: { id: true, channel_id: true, created_at: true },
       where: { fetched_at: IsNull() },
     });
     expect(result).toHaveLength(2);

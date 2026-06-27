@@ -10,11 +10,15 @@ export class PostRepo {
     private readonly repo: Repository<Post>,
   ) { }
 
-  async findUnfetched(): Promise<Pick<Post, 'id' | 'channel_id'>[]> {
+  async findUnfetched(): Promise<Pick<Post, 'id' | 'channel_id' | 'created_at'>[]> {
     return this.repo.find({
-      select: { id: true, channel_id: true },
+      select: { id: true, channel_id: true, created_at: true },
       where: { fetched_at: IsNull() },
     });
+  }
+
+  async findById(id: string): Promise<Post | null> {
+    return this.repo.findOne({ where: { id } });
   }
 
   async upsert(post: Partial<Post>): Promise<void> {
@@ -23,9 +27,5 @@ export class PostRepo {
 
   async update(id: string, partial: Partial<Post>): Promise<void> {
     await this.repo.update({ id }, partial);
-  }
-
-  async findById(id: string): Promise<Post | null> {
-    return this.repo.findOne({ where: { id } });
   }
 }
