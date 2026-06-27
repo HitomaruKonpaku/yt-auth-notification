@@ -1,4 +1,5 @@
 import { Controller, Get, Query } from '@nestjs/common';
+import { ParseNumberPipe } from '../common/parse-number.pipe';
 import { NotificationService } from './notification.service';
 import { enrichNotification } from './notification.util';
 
@@ -8,11 +9,11 @@ export class NotificationController {
 
   @Get('notifications')
   async getNotifications(
-    @Query('limit') limit = 50,
-    @Query('offset') offset = 0,
+    @Query('limit', new ParseNumberPipe(50)) limit: number,
+    @Query('offset', new ParseNumberPipe(0)) offset: number,
     @Query('channel_id') channelId?: string,
   ) {
-    const result = await this.notificationService.getNotifications(+limit, +offset, channelId);
+    const result = await this.notificationService.getNotifications(limit, offset, channelId);
     return {
       total: result.total,
       items: result.items.map(item => enrichNotification(item)),

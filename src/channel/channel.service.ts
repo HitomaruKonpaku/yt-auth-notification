@@ -8,6 +8,10 @@ export class ChannelService {
 
   constructor(private readonly repo: ChannelRepo) { }
 
+  async getChannels(limit: number, offset: number) {
+    return this.repo.findAll({ limit, offset });
+  }
+
   async findById(id: string): Promise<Channel | null> {
     return this.repo.findById(id);
   }

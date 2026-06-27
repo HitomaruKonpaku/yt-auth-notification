@@ -4,10 +4,14 @@ import { ChannelRepo } from './channel.repo';
 
 describe('ChannelService', () => {
   let service: ChannelService;
-  let repo: { upsert: jest.Mock; findById: jest.Mock };
+  let repo: { upsert: jest.Mock; findById: jest.Mock; findAll: jest.Mock };
 
   beforeEach(async () => {
-    repo = { upsert: jest.fn().mockResolvedValue(undefined), findById: jest.fn() };
+    repo = {
+      upsert: jest.fn().mockResolvedValue(undefined),
+      findById: jest.fn(),
+      findAll: jest.fn(),
+    };
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ChannelService,
@@ -15,6 +19,14 @@ describe('ChannelService', () => {
       ],
     }).compile();
     service = module.get<ChannelService>(ChannelService);
+  });
+
+  it('should delegate getChannels to repo.findAll', async () => {
+    const result = { items: [{ id: 'UC1', handle: '@a', name: 'A' }], total: 1 };
+    repo.findAll.mockResolvedValue(result);
+    const got = await service.getChannels(10, 0);
+    expect(got).toBe(result);
+    expect(repo.findAll).toHaveBeenCalledWith({ limit: 10, offset: 0 });
   });
 
   it('should delegate findById to repo', async () => {

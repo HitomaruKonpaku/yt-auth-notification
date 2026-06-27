@@ -9,9 +9,9 @@ describe('NotificationRepo', () => {
 
   beforeEach(async () => {
     mockRepo = {
-      count: jest.fn(),
-      upsert: jest.fn(),
+      findAndCount: jest.fn(),
       find: jest.fn(),
+      upsert: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -22,6 +22,19 @@ describe('NotificationRepo', () => {
     }).compile();
 
     repo = module.get<NotificationRepo>(NotificationRepo);
+  });
+
+  it('should find all with total count ordered by sent_at desc', async () => {
+    const items = [{ id: '2' }, { id: '1' }];
+    mockRepo.findAndCount.mockResolvedValue([items, 2]);
+    const result = await repo.findAll({ limit: 10, offset: 0 });
+    expect(result).toEqual({ total: 2, items });
+    expect(mockRepo.findAndCount).toHaveBeenCalledWith({
+      where: {},
+      order: { sent_at: 'DESC' },
+      skip: 0,
+      take: 10,
+    });
   });
 
   it('should find existing IDs in bulk', async () => {
@@ -35,24 +48,6 @@ describe('NotificationRepo', () => {
     const result = await repo.findExistingIds([]);
     expect(result).toEqual(new Set());
     expect(mockRepo.find).not.toHaveBeenCalled();
-  });
-
-  it('should find all ordered by sent_at desc', async () => {
-    mockRepo.find.mockResolvedValue([{ id: '2' }, { id: '1' }]);
-    const result = await repo.findAll({ limit: 10, offset: 0 });
-    expect(result).toHaveLength(2);
-    expect(result[0].id).toBe('2');
-    expect(mockRepo.find).toHaveBeenCalledWith({
-      where: {},
-      order: { sent_at: 'DESC' },
-      skip: 0,
-      take: 10,
-    });
-  });
-
-  it('should count total rows', async () => {
-    mockRepo.count.mockResolvedValue(42);
-    expect(await repo.count()).toBe(42);
   });
 
   it('should upsert all rows and return only new IDs', async () => {

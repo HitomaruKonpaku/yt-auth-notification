@@ -6,7 +6,7 @@ import { SseService } from '../sse/sse.service';
 
 describe('NotificationService', () => {
   let service: NotificationService;
-  let repo: { upsertAll: jest.Mock; count: jest.Mock; findAll: jest.Mock };
+  let repo: { upsertAll: jest.Mock; findAll: jest.Mock };
   let postRepo: { upsert: jest.Mock };
   let sseService: { push: jest.Mock; subject: { next: jest.Mock } };
 
@@ -28,7 +28,7 @@ describe('NotificationService', () => {
   const FE_POST_PARAMS = 'wgNcEhhVQ0lqZGZqY1NhRWdkandiZ2p4QzNaV2caJFVna3g1WGwyNE9kZmZHTDVsMlVlSE9XZ1hfR3QtZFNZQmlIdiACWhhVQ0lqZGZqY1NhRWdkandiZ2p4QzNaV2c';
 
   beforeEach(async () => {
-    repo = { upsertAll: jest.fn().mockResolvedValue([]), count: jest.fn(), findAll: jest.fn() };
+    repo = { upsertAll: jest.fn().mockResolvedValue([]), findAll: jest.fn() };
     postRepo = { upsert: jest.fn() };
     sseService = { push: jest.fn(), subject: { next: jest.fn() } };
     const module: TestingModule = await Test.createTestingModule({
@@ -124,12 +124,12 @@ describe('NotificationService', () => {
     expect(result).toHaveLength(0);
   });
 
-  it('should return paginated results via getNotifications', async () => {
-    repo.count.mockResolvedValue(42);
-    repo.findAll.mockResolvedValue([{ id: '1' }]);
-    const result = await service.getNotifications(10, 0);
-    expect(result.total).toBe(42);
-    expect(result.items).toHaveLength(1);
+  it('should delegate getNotifications to repo.findAll', async () => {
+    const result = { total: 42, items: [{ id: '1' }] };
+    repo.findAll.mockResolvedValue(result);
+    const got = await service.getNotifications(10, 0);
+    expect(got).toBe(result);
+    expect(repo.findAll).toHaveBeenCalledWith({ limit: 10, offset: 0, channelId: undefined });
   });
 
   it('should push new items to SSE with enriched fields', async () => {

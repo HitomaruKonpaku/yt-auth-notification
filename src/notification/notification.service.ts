@@ -1,9 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { YTNodes } from 'youtubei.js';
 import { decodePostParams } from '../common/params-parser';
-import type { NotificationLike } from './notification.interface';
 import { PostRepo } from '../post/post.repo';
 import { SseService } from '../sse/sse.service';
+import type { NotificationLike } from './notification.interface';
 import { NotificationRepo } from './notification.repo';
 import { enrichNotification } from './notification.util';
 
@@ -16,6 +16,10 @@ export class NotificationService {
     private readonly postRepo: PostRepo,
     private readonly sseService: SseService,
   ) { }
+
+  async getNotifications(limit: number, offset: number, channelId?: string) {
+    return this.repo.findAll({ limit, offset, channelId });
+  }
 
   async processNotifications(raw: YTNodes.Notification[], ownerId?: string) {
     const rows: NotificationLike[] = [];
@@ -52,12 +56,6 @@ export class NotificationService {
     }
 
     return newItems;
-  }
-
-  async getNotifications(limit: number, offset: number, channelId?: string) {
-    const total = await this.repo.count(channelId);
-    const items = await this.repo.findAll({ limit, offset, channelId });
-    return { total, limit, offset, items };
   }
 
   private async tryParsePost(n: YTNodes.Notification, row: NotificationLike) {

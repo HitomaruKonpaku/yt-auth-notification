@@ -1,14 +1,18 @@
 import { Injectable, Logger } from '@nestjs/common';
+import axios from 'axios';
+import Bottleneck from 'bottleneck';
 import { AccountService } from '../account/account.service';
 import { ChannelService } from '../channel/channel.service';
 import { parseAuthorName } from '../common/author-parser';
 import { buildYtEndpointUrl, buildYtVideoThumbnailUrl } from '../common/link-builder';
+import type { DiscordWebhookConfig } from '../config/config.interface';
 import { ConfigService } from '../config/config.service';
 import type { NotificationLike } from '../notification/notification.interface';
 
 @Injectable()
 export class DiscordService {
   private readonly logger = new Logger(DiscordService.name);
+  private readonly limiter = new Bottleneck({ maxConcurrent: 1 });
 
   constructor(
     private readonly configService: ConfigService,
@@ -19,28 +23,24 @@ export class DiscordService {
   async relayNotification(notif: NotificationLike) {
     const webhooks = this.configService.getConfig().webhooks!.discord!;
     const embed = await this.buildEmbed(notif);
+    await Promise.all(webhooks.map((w) => this.limiter.schedule(() => this.sendToWebhook(w, embed, notif.id))));
+  }
 
-    for (const webhook of webhooks) {
-      try {
-        const body: Record<string, any> = { embeds: [embed] };
-        if (webhook.msg && webhook.msg.length > 0) {
-          body.content = webhook.msg;
-        }
-
-        const res = await fetch(webhook.url!, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        });
-
-        if (!res.ok) {
-          this.logger.warn(`Webhook failed: ${res.status} ${res.statusText}`);
-        } else {
-          this.logger.log(`Sent notification #${notif.id} to webhook`);
-        }
-      } catch (err) {
-        this.logger.warn(`Webhook error: skipping — ${(err as Error).message}`);
+  private async sendToWebhook(
+    webhook: DiscordWebhookConfig,
+    embed: Record<string, any>,
+    notifId: string,
+  ) {
+    try {
+      const body: Record<string, any> = { embeds: [embed] };
+      if (webhook.msg && webhook.msg.length > 0) {
+        body.content = webhook.msg;
       }
+
+      await axios.post(webhook.url!, body);
+      this.logger.log(`Sent notification #${notifId} to webhook`);
+    } catch (err) {
+      this.logger.warn(`Webhook failed: ${(err as Error).message}`);
     }
   }
 
@@ -101,7 +101,7 @@ export class DiscordService {
         return null;
       }
 
-      const footer: Record<string, any> = { text: '@' + handle };
+      const footer: Record<string, any> = { text: handle };
       if (iconUrl) {
         footer.icon_url = iconUrl;
       }

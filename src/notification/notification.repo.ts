@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { FindOptionsWhere, In, Repository } from 'typeorm';
+import type { PaginatedResult, PaginationOpts } from '../common/pagination';
 import { Notification } from '../db/notification.entity';
-import type { PaginationOpts } from '../common/pagination';
 
 @Injectable()
 export class NotificationRepo {
@@ -10,6 +10,20 @@ export class NotificationRepo {
     @InjectRepository(Notification)
     private readonly repo: Repository<Notification>,
   ) { }
+
+  async findAll(opts: PaginationOpts & { channelId?: string }): Promise<PaginatedResult<Notification>> {
+    const where: FindOptionsWhere<Notification> = {};
+    if (opts.channelId) {
+      where.owner_id = opts.channelId;
+    }
+    const [items, total] = await this.repo.findAndCount({
+      where,
+      order: { sent_at: 'DESC' },
+      skip: opts.offset,
+      take: opts.limit,
+    });
+    return { total, items };
+  }
 
   async findExistingIds(ids: string[]): Promise<Set<string>> {
     if (ids.length === 0) {
@@ -33,26 +47,5 @@ export class NotificationRepo {
     });
 
     return ids.filter(id => !existingIds.has(id));
-  }
-
-  async findAll(opts: PaginationOpts & { channelId?: string }): Promise<Notification[]> {
-    const where: any = {};
-    if (opts.channelId) {
-      where.owner_id = opts.channelId;
-    }
-    return this.repo.find({
-      where,
-      order: { sent_at: 'DESC' },
-      skip: opts.offset,
-      take: opts.limit,
-    });
-  }
-
-  async count(channelId?: string): Promise<number> {
-    const where: any = {};
-    if (channelId) {
-      where.owner_id = channelId;
-    }
-    return this.repo.count({ where });
   }
 }

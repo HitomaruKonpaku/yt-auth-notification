@@ -10,6 +10,7 @@ describe('ChannelRepo', () => {
   beforeEach(async () => {
     mockRepo = {
       exists: jest.fn(),
+      findAndCount: jest.fn(),
       findOne: jest.fn(),
       upsert: jest.fn(),
     };
@@ -35,6 +36,14 @@ describe('ChannelRepo', () => {
     mockRepo.exists.mockResolvedValue(false);
     const result = await repo.exists('UC999');
     expect(result).toBe(false);
+  });
+
+  it('should find all channels with total count', async () => {
+    const channels = [{ id: 'UC1', handle: '@a', name: 'A' }, { id: 'UC2', handle: '@b', name: 'B' }];
+    mockRepo.findAndCount.mockResolvedValue([channels, 2]);
+    const result = await repo.findAll({ limit: 10, offset: 0 });
+    expect(result).toEqual({ items: channels, total: 2 });
+    expect(mockRepo.findAndCount).toHaveBeenCalledWith({ order: { handle: 'ASC' }, skip: 0, take: 10 });
   });
 
   it('should find channel by id', async () => {
