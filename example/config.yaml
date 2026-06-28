@@ -1,5 +1,7 @@
+# Polling interval in seconds (default: 60)
 interval: 60
 
+# Fetch full post content (text + attachments) via Innertube (default: false)
 # fetchPost: true
 
 webhooks:

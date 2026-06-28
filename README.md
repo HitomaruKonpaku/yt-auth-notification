@@ -29,18 +29,9 @@ Open `http://localhost:8080` to see the notification feed.
 | `DATA_DIR` | `./data` | No | Data directory (database stored as `{DATA_DIR}/database.sqlite`) |
 | `NOTIFICATION_NEXT` | `0` | No | Continuation pages: `0` = single page, `<0` = all pages, `>0` = N extra pages |
 
-## Configuration (`config.yaml`)
+## Configuration
 
-```yaml
-interval: 60  # polling interval in seconds
-
-webhooks:
-  discord:
-    - url: https://discord.com/api/webhooks/...
-      msg: "<@123123123>"  # optional role ping
-```
-
-Both `interval` and `webhooks.discord` are optional — defaults to 60s polling with no relay.
+See [example/config.yaml](example/config.yaml) for all available options and defaults.
 
 ## Docker
 
