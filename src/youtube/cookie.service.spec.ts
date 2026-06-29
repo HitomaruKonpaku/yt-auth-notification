@@ -3,7 +3,14 @@ import { CookieService } from './cookie.service';
 
 jest.mock('fs', () => {
   const actual = jest.requireActual('fs');
-  return { ...actual, watch: jest.fn() };
+  return {
+    ...actual,
+    watch: jest.fn(),
+    existsSync: jest.fn().mockReturnValue(true),
+    readFileSync: jest.fn().mockReturnValue(
+      '# Netscape HTTP Cookie File\n.youtube.com\tTRUE\t/\tFALSE\t0\tSAPISID\tval1\n.youtube.com\tTRUE\t/\tFALSE\t0\tHSID\tval2\n',
+    ),
+  };
 });
 
 describe('CookieService', () => {
@@ -77,5 +84,41 @@ describe('CookieService', () => {
     }).compile();
     service = module.get<CookieService>(CookieService);
     expect(mockWatch()).not.toHaveBeenCalled();
+  });
+
+  it('should cache the cookie string and only read file once', async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [CookieService],
+    }).compile();
+    service = module.get<CookieService>(CookieService);
+
+    const readFileSync = require('fs').readFileSync as jest.Mock;
+    readFileSync.mockClear();
+
+    const result1 = service.getCookieString();
+    const result2 = service.getCookieString();
+
+    expect(result1).toEqual(result2);
+    expect(readFileSync).toHaveBeenCalledTimes(1);
+  });
+
+  it('should invalidate cache when cookie file changes', async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [CookieService],
+    }).compile();
+    service = module.get<CookieService>(CookieService);
+
+    const readFileSync = require('fs').readFileSync as jest.Mock;
+    readFileSync.mockClear();
+
+    service.getCookieString();
+    expect(readFileSync).toHaveBeenCalledTimes(1);
+
+    const mockWatch = require('fs').watch as jest.Mock;
+    const watchCallback = mockWatch.mock.calls[0][1];
+    watchCallback('change');
+
+    service.getCookieString();
+    expect(readFileSync).toHaveBeenCalledTimes(2);
   });
 });

@@ -1,11 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
-import * as fs from 'fs';
 import { EventEmitter } from 'events';
+import * as fs from 'fs';
 import { CookieJar } from 'netscape-cookies-parser';
 
 @Injectable()
 export class CookieService extends EventEmitter {
   private readonly logger = new Logger(CookieService.name);
+
+  private cachedValue: string | null = null;
 
   constructor() {
     super();
@@ -15,6 +17,7 @@ export class CookieService extends EventEmitter {
       fs.watch(cookieFile, (eventType) => {
         if (eventType === 'change') {
           this.logger.log('Cookie file changed');
+          this.cachedValue = null;
           this.emit('changed');
         }
       });
@@ -22,6 +25,10 @@ export class CookieService extends EventEmitter {
   }
 
   getCookieString(): string {
+    if (this.cachedValue !== null) {
+      return this.cachedValue;
+    }
+
     const cookieFile = process.env.COOKIE_FILE;
     if (!cookieFile) {
       throw new Error('COOKIE_FILE environment variable is not set');
@@ -57,6 +64,7 @@ export class CookieService extends EventEmitter {
       .join('; ');
 
     this.logger.log(`Parsed ${cookies.length} cookies, using ${filtered.length} from .youtube.com`);
+    this.cachedValue = cookieString;
     return cookieString;
   }
 }
