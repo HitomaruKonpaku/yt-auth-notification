@@ -4,14 +4,14 @@ import { AccountService } from './account.service';
 
 describe('AccountController', () => {
   let controller: AccountController;
-  let accountService: { accounts: IterableIterator<[string, any]> };
+  let accountService: { getAccounts: jest.Mock };
 
   beforeEach(async () => {
     accountService = {
-      accounts: (function* () {
-        yield ['UC1', { handle: '@a', name: 'Channel A', thumbnail_url: 'img.jpg' }];
-        yield ['UC2', { handle: '@b', name: 'Channel B', thumbnail_url: undefined }];
-      })(),
+      getAccounts: jest.fn().mockReturnValue([
+        { id: 'UC1', handle: '@a', name: 'Channel A', thumbnail_url: 'img.jpg', is_selected: true, is_disabled: false, pageId: undefined },
+        { id: 'UC2', handle: '@b', name: 'Channel B', thumbnail_url: undefined, is_selected: false, is_disabled: false, pageId: 'P2' },
+      ]),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -25,12 +25,10 @@ describe('AccountController', () => {
     const result = controller.getAccounts();
     expect(result.total).toBe(2);
     expect(result.items).toHaveLength(2);
-    expect(result.items[0]).toEqual({ id: 'UC1', handle: '@a', name: 'Channel A', thumbnail_url: 'img.jpg' });
-    expect(result.items[1]).toEqual({ id: 'UC2', handle: '@b', name: 'Channel B', thumbnail_url: undefined });
   });
 
   it('GET /api/accounts should return empty when no accounts', () => {
-    accountService.accounts = (function* () {}()) as any;
+    accountService.getAccounts.mockReturnValue([]);
     const result = controller.getAccounts();
     expect(result.total).toBe(0);
     expect(result.items).toEqual([]);

@@ -11,7 +11,7 @@ const mockAxios = axios as jest.Mocked<typeof axios>;
 describe('DiscordService', () => {
   let service: DiscordService;
   let configService: { getConfig: jest.Mock };
-  let accountService: { get: jest.Mock };
+  let accountService: { getAccount: jest.Mock };
   let channelService: { findById: jest.Mock };
 
   beforeEach(async () => {
@@ -26,7 +26,7 @@ describe('DiscordService', () => {
         },
       }),
     };
-    accountService = { get: jest.fn().mockReturnValue(undefined) };
+    accountService = { getAccount: jest.fn().mockReturnValue(undefined) };
     channelService = { findById: jest.fn().mockResolvedValue(null) };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -105,7 +105,7 @@ describe('DiscordService', () => {
   // --- Footer tests ---
 
   it('should add footer from AccountService when owner_id present', async () => {
-    accountService.get.mockReturnValue({
+    accountService.getAccount.mockReturnValue({
       handle: '@nakiriayame',
       name: 'Nakiri Ayame Ch.',
       thumbnail_url: 'https://yt3.ggpht.com/photo.jpg',
@@ -131,7 +131,7 @@ describe('DiscordService', () => {
   });
 
   it('should add footer from ChannelService fallback when account not found', async () => {
-    accountService.get.mockReturnValue(undefined);
+    accountService.getAccount.mockReturnValue(undefined);
     channelService.findById.mockResolvedValue({
       id: 'UC123',
       handle: '@nakiriayame',
@@ -159,7 +159,7 @@ describe('DiscordService', () => {
   });
 
   it('should omit footer icon_url when channel has no thumbnail', async () => {
-    accountService.get.mockReturnValue({
+    accountService.getAccount.mockReturnValue({
       handle: '@nakiriayame',
       name: 'Nakiri Ayame Ch.',
       thumbnail_url: undefined,
@@ -199,7 +199,7 @@ describe('DiscordService', () => {
   });
 
   it('should not add footer when neither source has handle', async () => {
-    accountService.get.mockReturnValue(undefined);
+    accountService.getAccount.mockReturnValue(undefined);
     channelService.findById.mockResolvedValue(null);
     mockAxios.post.mockResolvedValue({} as any);
 
@@ -218,8 +218,8 @@ describe('DiscordService', () => {
     expect(body.embeds[0].footer).toBeUndefined();
   });
 
-  it('should skip footer when AccountService.get throws', async () => {
-    accountService.get.mockImplementation(() => {
+  it('should skip footer when AccountService.getAccount throws', async () => {
+    accountService.getAccount.mockImplementation(() => {
       throw new Error('boom');
     });
     mockAxios.post.mockResolvedValue({} as any);
@@ -241,7 +241,7 @@ describe('DiscordService', () => {
   });
 
   it('should skip footer when ChannelService.findById throws', async () => {
-    accountService.get.mockReturnValue(undefined);
+    accountService.getAccount.mockReturnValue(undefined);
     channelService.findById.mockRejectedValue(new Error('db down'));
     mockAxios.post.mockResolvedValue({} as any);
 

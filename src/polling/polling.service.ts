@@ -12,7 +12,6 @@ export class PollingService {
   private readonly logger = new Logger(PollingService.name);
 
   private isFirstPoll = true;
-  private currentWaitMs: number;
   private timer: NodeJS.Timeout | null = null;
 
   constructor(
@@ -22,49 +21,32 @@ export class PollingService {
     private readonly notificationService: NotificationService,
     private readonly postService: PostService,
     private readonly discordService: DiscordService,
-  ) {
-    this.currentWaitMs = this.getIntervalMs();
-  }
+  ) { }
 
   startPolling() {
     this.logger.log('Starting polling loop');
     this.poll();
   }
 
-  private getIntervalMs(): number {
-    return this.configService.getConfig().interval! * 1000;
-  }
-
   private scheduleNext() {
-    this.timer = setTimeout(() => this.poll(), this.currentWaitMs);
+    this.timer = setTimeout(() => this.poll(), this.configService.getConfig().interval! * 1000);
   }
 
   private async poll() {
     try {
-      // Lazy init: discover accounts on first poll via the active session
-      if (!this.accountService.isInitialized) {
-        const activeYt = await this.ytProvider.initYt('__active__');
-        await this.accountService.initialize(activeYt);
-        this.ytProvider.deleteYt('__active__');
-      }
+      await this.accountService.initialize();
 
-      for (const [channelId] of this.accountService.accounts) {
-        await this.pollChannel(channelId);
+      for (const account of this.accountService.accounts) {
+        await this.pollChannel(account.id);
       }
 
       if (this.configService.getConfig().fetchPost) {
-        await this.postService.pollPosts();
+        this.postService.pollPosts();
       }
 
       this.isFirstPoll = false;
-      this.currentWaitMs = this.getIntervalMs();
     } catch (err) {
       this.logger.error('Poll loop failed', err);
-      this.currentWaitMs = Math.min(
-        this.currentWaitMs * 2,
-        this.configService.getConfig().maxBackoffMs!,
-      );
-      this.logger.warn(`Backing off: next poll in ${this.currentWaitMs / 1000}s`);
     }
 
     this.scheduleNext();
@@ -72,7 +54,7 @@ export class PollingService {
 
   private async pollChannel(channelId: string) {
     try {
-      const account = this.accountService.get(channelId);
+      const account = this.accountService.getAccount(channelId);
       if (!account) {
         this.logger.warn(`Account info not found for ${channelId}, skipping`);
         return;
@@ -89,26 +71,19 @@ export class PollingService {
       // First-poll continuation per account
       if (this.isFirstPoll) {
         const next = parseInt(process.env.NOTIFICATION_NEXT ?? '0', 10) || 0;
-        if (next < 0) {
+        if (next !== 0) {
           let page = menu;
-          while (page.contents.length > 0) {
+          let i = 0;
+          do {
             try {
               page = await page.getContinuation();
               contents.push(...page.contents);
-            } catch {
+            } catch (err) {
+              this.logger.warn(`[${channelId}] Continuation failed`, err);
               break;
             }
-          }
-        } else if (next > 0) {
-          let page = menu;
-          for (let i = 0; i < next; i++) {
-            try {
-              page = await page.getContinuation();
-              contents.push(...page.contents);
-            } catch {
-              break;
-            }
-          }
+            i++;
+          } while (next < 0 ? page.contents.length > 0 : i < next);
         }
       }
 

@@ -1,5 +1,4 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { IsNull } from 'typeorm';
 import { PostRepo } from './post.repo';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Post } from '../db/post.entity';
@@ -39,23 +38,6 @@ describe('PostRepo', () => {
       },
       { conflictPaths: ['id'] },
     );
-  });
-
-  it('should find posts where fetched_at is null', async () => {
-    const posts = [
-      { id: 'p1', channel_id: 'UC1', fetched_at: null },
-      { id: 'p2', channel_id: 'UC2', fetched_at: null },
-    ];
-    mockRepo.find.mockResolvedValue(posts);
-
-    const result = await repo.findUnfetched();
-
-    expect(mockRepo.find).toHaveBeenCalledWith({
-      select: { id: true, channel_id: true, created_at: true },
-      where: { fetched_at: IsNull() },
-    });
-    expect(result).toHaveLength(2);
-    expect(result[0].id).toBe('p1');
   });
 
   it('should update a post row by id', async () => {

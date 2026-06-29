@@ -85,7 +85,7 @@ export class DiscordService {
       let handle: string | undefined;
       let iconUrl: string | undefined;
 
-      const account = this.accountService.get(ownerId);
+      const account = this.accountService.getAccount(ownerId);
       if (account) {
         handle = account.handle;
         iconUrl = account.thumbnail_url;

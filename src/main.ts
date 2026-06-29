@@ -32,7 +32,10 @@ async function bootstrap() {
   const url = `http://${host}:${port}`;
   logger.warn(`🚀 App running on ${url}`);
 
-  app.get(PollingService).startPolling();
+  setTimeout(() => {
+    const service = app.get(PollingService);
+    service.startPolling()
+  }, 1000);
 }
 
 bootstrap();

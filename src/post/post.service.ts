@@ -19,18 +19,22 @@ export class PostService {
   }
 
   async pollPosts(): Promise<void> {
-    const posts = await this.repo.findUnfetched();
-    for (const post of posts) {
-      await this.fetchPost(post);
-    }
-  }
-
-  private async fetchPost(post: Post): Promise<void> {
-    const ownerId = this.ownerMap.get(post.id);
-    if (!ownerId) {
+    const ids = [...this.ownerMap.keys()];
+    if (ids.length === 0) {
       return;
     }
 
+    const posts = await this.repo.findToFetch(ids);
+    for (const post of posts) {
+      const ownerId = this.ownerMap.get(post.id);
+      if (!ownerId) {
+        continue;
+      }
+      await this.fetchPost(post, ownerId);
+    }
+  }
+
+  private async fetchPost(post: Pick<Post, 'id' | 'channel_id' | 'created_at'>, ownerId: string): Promise<void> {
     const yt = this.ytProvider.getYt(ownerId);
     if (!yt) {
       return;

@@ -38,7 +38,7 @@ describe('ChannelService', () => {
   });
 
   it('should call repo.upsert with all fields', async () => {
-    await service.upsert('UC123', '@test', 'Test Channel', 'img.jpg');
+    await service.upsert({ id: 'UC123', handle: '@test', name: 'Test Channel', thumbnail_url: 'img.jpg' });
     expect(repo.upsert).toHaveBeenCalledWith({
       id: 'UC123',
       handle: '@test',
@@ -48,7 +48,7 @@ describe('ChannelService', () => {
   });
 
   it('should call repo.upsert without thumbnail_url when undefined', async () => {
-    await service.upsert('UC123', '@test', 'Test Channel');
+    await service.upsert({ id: 'UC123', handle: '@test', name: 'Test Channel' });
     expect(repo.upsert).toHaveBeenCalledWith({
       id: 'UC123',
       handle: '@test',
@@ -59,7 +59,7 @@ describe('ChannelService', () => {
 
   it('should log error on upsert failure', async () => {
     repo.upsert.mockRejectedValue(new Error('fail'));
-    await service.upsert('UCerr', '@err', 'Err');
+    await service.upsert({ id: 'UCerr', handle: '@err', name: 'Err' });
     expect(repo.upsert).toHaveBeenCalledTimes(1);
   });
 });

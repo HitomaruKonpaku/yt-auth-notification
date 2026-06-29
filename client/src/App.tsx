@@ -1,19 +1,19 @@
-import { AppShell, Container, MantineProvider } from '@mantine/core';
+import { AppShell, Container, MantineProvider, Progress } from '@mantine/core';
 import { notifications, Notifications } from '@mantine/notifications';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  type NotificationItem,
   fetchAccounts,
   fetchNotifications,
+  type NotificationItem,
 } from './api';
-import { setErrorHandler } from './error';
 import AppFooter from './components/AppFooter';
 import AppHeader from './components/AppHeader';
 import NotificationList from './components/NotificationList';
 import { readConfig, useConfig } from './context/ConfigContext';
+import { useData } from './context/DataContext';
 import { HotkeyProvider, type HotkeyActions } from './context/HotkeyContext';
 import { useLoading } from './context/LoadingContext';
-import { useData } from './context/DataContext';
+import { setErrorHandler } from './error';
 import { theme } from './theme';
 
 const DEFAULT_LIMIT = 10;
@@ -41,7 +41,7 @@ export default function App() {
   const { limit, setLimit } = useConfig();
   const [offset, setOffset] = useState(0);
   const [total, setTotal] = useState(0);
-  const { setLoading } = useLoading();
+  const { loading, setLoading } = useLoading();
   const {
     selectedChannelId, setSelectedChannelId,
     setAccounts, setNotifications,
@@ -79,7 +79,7 @@ export default function App() {
       });
       seen.set(key, id);
     });
-    return () => setErrorHandler(() => {});
+    return () => setErrorHandler(() => { });
   }, []);
 
   const loadNotifications = useCallback(async (chanId: string | null, lim: number, off: number) => {
@@ -90,7 +90,6 @@ export default function App() {
       setTotal(data.total);
     } catch (err) {
       console.error('fetchNotifications failed:', err);
-      setNotifications([]);
     }
     setLoading(false);
   }, [setLoading, setNotifications]);
@@ -259,26 +258,35 @@ export default function App() {
                 onChangeLimit={changeLimit}
                 onReload={reload}
               />
-          </Container>
-        </AppShell.Header>
+            </Container>
+          </AppShell.Header>
 
-        <AppShell.Main>
-          <Container maw={800} px={{ base: 0, sm: 'md' }}>
-            <NotificationList />
-          </Container>
-        </AppShell.Main>
-
-        <AppShell.Footer>
-          <Container maw={800} h="100%" px={{ base: 0, sm: 'md' }}>
-            <AppFooter
-              offset={offset}
-              limit={limit}
-              total={total}
-              onGoTo={goTo}
+          {loading && (
+            <Progress
+              value={100}
+              animated
+              size="xs"
+              style={{ position: 'fixed', top: 50, left: 0, right: 0, zIndex: 200 }}
             />
-          </Container>
-        </AppShell.Footer>
-      </AppShell>
+          )}
+
+          <AppShell.Main>
+            <Container maw={800} px={{ base: 0, sm: 'md' }}>
+              <NotificationList />
+            </Container>
+          </AppShell.Main>
+
+          <AppShell.Footer>
+            <Container maw={800} h="100%" px={{ base: 0, sm: 'md' }}>
+              <AppFooter
+                offset={offset}
+                limit={limit}
+                total={total}
+                onGoTo={goTo}
+              />
+            </Container>
+          </AppShell.Footer>
+        </AppShell>
       </HotkeyProvider>
     </MantineProvider>
   );

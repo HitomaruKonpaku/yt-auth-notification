@@ -18,6 +18,10 @@ export class YTProvider {
     return this.yts.get(channelId);
   }
 
+  setYt(channelId: string, yt: Innertube): void {
+    this.yts.set(channelId, yt);
+  }
+
   deleteYt(channelId: string): void {
     this.yts.delete(channelId);
   }

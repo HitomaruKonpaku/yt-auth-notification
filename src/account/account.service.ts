@@ -2,131 +2,138 @@ import { Injectable, Logger } from '@nestjs/common';
 import type Innertube from 'youtubei.js';
 import { YTNodes } from 'youtubei.js';
 import { ChannelService } from '../channel/channel.service';
+import { extractPageId } from '../channel/channel.util';
 import { ConfigService } from '../config/config.service';
 import { SseService } from '../sse/sse.service';
+import { CookieService } from '../youtube/cookie.service';
+import { YTProvider } from '../youtube/yt.provider';
 import type { AccountInfo } from './account.interface';
 
 @Injectable()
 export class AccountService {
   private readonly logger = new Logger(AccountService.name);
   private readonly accountsMap = new Map<string, AccountInfo | null>();
+
   private initialized = false;
 
   constructor(
     private readonly channelService: ChannelService,
     private readonly configService: ConfigService,
     private readonly sseService: SseService,
-  ) { }
-
-  async initialize(yt: Innertube): Promise<void> {
-    if (this.initialized) {
-      return;
-    }
-
-    try {
-      this.logger.debug('yt.account.getInfo(true)');
-      const accountInfo = await yt.account.getInfo(true);
-      const channels = accountInfo ?? [];
-      this.logger.log(`Found ${channels.length} channel(s)`);
-
-      // Collect metadata keyed by handle first
-      const metaByHandle = new Map<string, { name: string; thumbnail_url?: string; isSelected: boolean; pageId?: string }>();
-      for (const ch of channels) {
-        const handle = ch.channel_handle?.toString();
-        if (!handle) {
-          continue;
-        }
-        metaByHandle.set(handle, {
-          name: ch.account_name?.toString() ?? '',
-          thumbnail_url: ch.account_photo?.[0]?.url ?? undefined,
-          isSelected: ch.is_selected ?? true,
-          pageId: !ch.is_selected ? this.extractPageId(ch) : undefined,
-        });
-      }
-
-      const maxRetries = this.configService.getConfig().accountInitRetries!;
-      for (const [handle, meta] of metaByHandle) {
-        this.accountsMap.set(handle, null); // lock insertion order
-        let channelId: string | undefined;
-
-        for (let attempt = 0; attempt < maxRetries; attempt++) {
-          try {
-            // Resolve real channel ID from handle
-            const url = `https://www.youtube.com/${handle}`;
-            this.logger.debug(`yt.resolveURL(${url})`);
-            const resolved = await yt.resolveURL(url);
-            channelId = resolved.payload.browseId as string;
-            this.logger.debug(`  -> ${JSON.stringify({ handle, channelId })}`);
-
-            // Re-key from handle to real channel ID
-            this.accountsMap.delete(handle);
-            this.accountsMap.set(channelId, {
-              handle,
-              name: meta.name,
-              thumbnail_url: meta.thumbnail_url,
-              pageId: meta.pageId,
-            });
-
-            await this.channelService.upsert(channelId, handle, meta.name, meta.thumbnail_url);
-            break;
-          } catch (err) {
-            this.logger.warn(`Account init attempt ${attempt + 1}/${maxRetries} failed for ${handle}`, err);
-            if (attempt === maxRetries - 1) {
-              this.logger.error(`Skipping channel ${handle} after ${maxRetries} failed attempts`);
-              this.accountsMap.delete(channelId ?? handle);
-            }
-          }
-        }
-      }
-
-      this.initialized = true;
-
-      // Push full account list via SSE so UI can re-render the dropdown
-      const accountList: { id: string; handle: string; name: string; thumbnail_url?: string }[] = [];
-      for (const [id, info] of this.accounts) {
-        accountList.push({
-          id,
-          handle: info.handle,
-          name: info.name,
-          thumbnail_url: info.thumbnail_url,
-        });
-      }
-      this.sseService.push('account.list', { items: accountList });
-    } catch (err) {
-      this.logger.error('AccountService.initialize() failed', err);
-      // Retry next poll
-    }
+    private readonly ytProvider: YTProvider,
+    private readonly cookieService: CookieService,
+  ) {
+    this.cookieService.on('changed', () => {
+      this.logger.log('Cookie file changed, resetting accounts');
+      this.accountsMap.clear();
+      this.initialized = false;
+    });
   }
 
-  get(channelId: string): AccountInfo | undefined {
-    const entry = this.accountsMap.get(channelId);
-    return entry ?? undefined;
-  }
-
-  get accounts(): IterableIterator<[string, AccountInfo]> {
-    const entries: [string, AccountInfo][] = [];
-    for (const [id, info] of this.accountsMap) {
-      if (info !== null) {
-        entries.push([id, info]);
-      }
-    }
-    return entries[Symbol.iterator]();
+  get accounts(): AccountInfo[] {
+    return this.getAccounts();
   }
 
   get isInitialized(): boolean {
     return this.initialized;
   }
 
-  private extractPageId(ch: YTNodes.AccountItem): string | undefined {
-    const tokens = ch.endpoint?.payload?.supportedTokens ;
-    if (!Array.isArray(tokens)) {
-      return undefined;
+  getAccounts(): AccountInfo[] {
+    const accounts: AccountInfo[] = [];
+    for (const info of this.accountsMap.values()) {
+      if (!info) {
+        continue;
+      }
+      accounts.push(info);
     }
-    for (const token of tokens) {
-      if (token?.pageIdToken?.pageId) {
-        return String(token.pageIdToken.pageId);
+    return accounts;
+  }
+
+  getAccount(channelId: string): AccountInfo {
+    const account = this.accountsMap.get(channelId);
+    return account as AccountInfo;
+  }
+
+  async initialize(): Promise<void> {
+    if (this.initialized) {
+      return;
+    }
+
+    const yt = await this.ytProvider.initYt('__main__');
+
+    let channels: YTNodes.AccountItem[];
+    try {
+      this.logger.debug('yt.account.getInfo(true)');
+      const accountInfo = await yt.account.getInfo(true);
+      channels = accountInfo ?? [];
+    } catch (err) {
+      this.logger.error('yt.account.getInfo(true) failed', err);
+      return;
+    }
+
+    if (channels.length === 0) {
+      this.logger.error('No channels found — check your account/cookies');
+      return;
+    }
+
+    this.logger.log(`Found ${channels.length} channel(s)`);
+
+    for (const channel of channels) {
+      await this.initializeChannel(yt, channel);
+    }
+
+    await this.handoffSessions(yt);
+
+    this.initialized = true;
+    this.sseService.push('account.list', { items: this.getAccounts() });
+  }
+
+  private async initializeChannel(yt: Innertube, channel: YTNodes.AccountItem): Promise<void> {
+    const handle = channel.channel_handle?.toString();
+    if (!handle) {
+      return;
+    }
+
+    const maxRetries = this.configService.getConfig().accountInitRetries!;
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        const url = `https://www.youtube.com/${handle}`;
+        this.logger.debug(`yt.resolveURL(${url})`);
+        const resolved = await yt.resolveURL(url);
+        const channelId = resolved.payload.browseId as string;
+        this.logger.debug(`  -> ${JSON.stringify({ handle, channelId })}`);
+
+        await this.channelService.upsert({ id: channelId, handle, name: channel.account_name?.toString() ?? '', thumbnail_url: channel.account_photo?.[0]?.url ?? undefined });
+
+        this.accountsMap.set(channelId, {
+          id: channelId,
+          handle,
+          name: channel.account_name?.toString() ?? '',
+          thumbnail_url: channel.account_photo?.[0]?.url ?? undefined,
+          is_selected: channel.is_selected,
+          is_disabled: channel.is_disabled,
+          pageId: extractPageId(channel),
+        });
+        return;
+      } catch (err) {
+        this.logger.warn(`Account init attempt ${attempt + 1}/${maxRetries} failed for ${handle}`, err);
+        if (attempt === maxRetries - 1) {
+          this.logger.error(`Skipping channel ${handle} after ${maxRetries} failed attempts`);
+        }
       }
     }
-    return undefined;
+  }
+
+  private async handoffSessions(yt: Innertube): Promise<void> {
+    for (const [channelId, account] of this.accountsMap) {
+      if (!account) {
+        continue;
+      }
+      if (account.is_selected) {
+        this.ytProvider.setYt(channelId, yt);
+        continue;
+      }
+      await this.ytProvider.initYt(channelId, account.pageId);
+    }
   }
 }

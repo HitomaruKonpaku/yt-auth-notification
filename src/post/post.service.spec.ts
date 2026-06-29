@@ -5,11 +5,17 @@ import { YTProvider } from '../youtube/yt.provider';
 
 describe('PostService', () => {
   let service: PostService;
-  let repo: { findUnfetched: jest.Mock; update: jest.Mock };
+  let repo: { findToFetch: jest.Mock; update: jest.Mock };
   let ytProvider: { getYt: jest.Mock };
 
+  const makePost = (id: string, channel_id: string, created_at?: number) => ({
+    id,
+    channel_id,
+    created_at: created_at ?? 1700000000,
+  });
+
   beforeEach(async () => {
-    repo = { findUnfetched: jest.fn().mockResolvedValue([]), update: jest.fn() };
+    repo = { findToFetch: jest.fn().mockResolvedValue([]), update: jest.fn() };
     ytProvider = { getYt: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -25,9 +31,7 @@ describe('PostService', () => {
 
   it('should fetch and update post with content', async () => {
     service.registerOwner('post1', 'UC1');
-    repo.findUnfetched.mockResolvedValue([
-      { id: 'post1', channel_id: 'UCAuthor', created_at: 1700000000 },
-    ]);
+    repo.findToFetch.mockResolvedValue([makePost('post1', 'UCAuthor')]);
 
     const mockYt = {
       getPost: jest.fn().mockResolvedValue({
@@ -53,23 +57,19 @@ describe('PostService', () => {
     }));
   });
 
-  it('should skip post when ownerId not in map', async () => {
-    repo.findUnfetched.mockResolvedValue([
-      { id: 'post1', channel_id: 'UCAuthor' },
-    ]);
+  it('should skip post when getYt returns undefined', async () => {
+    service.registerOwner('post1', 'UC1');
+    repo.findToFetch.mockResolvedValue([makePost('post1', 'UCAuthor')]);
+    ytProvider.getYt.mockReturnValue(undefined);
 
     await service.pollPosts();
 
-    expect(ytProvider.getYt).not.toHaveBeenCalled();
     expect(repo.update).not.toHaveBeenCalled();
   });
 
-  it('should skip post when getYt returns undefined', async () => {
+  it('should do nothing when findToFetch returns empty', async () => {
     service.registerOwner('post1', 'UC1');
-    repo.findUnfetched.mockResolvedValue([
-      { id: 'post1', channel_id: 'UCAuthor' },
-    ]);
-    ytProvider.getYt.mockReturnValue(undefined);
+    repo.findToFetch.mockResolvedValue([]);
 
     await service.pollPosts();
 
@@ -78,9 +78,7 @@ describe('PostService', () => {
 
   it('should set fetched_at on non-BackstagePost result', async () => {
     service.registerOwner('post1', 'UC1');
-    repo.findUnfetched.mockResolvedValue([
-      { id: 'post1', channel_id: 'UCAuthor' },
-    ]);
+    repo.findToFetch.mockResolvedValue([makePost('post1', 'UCAuthor')]);
     ytProvider.getYt.mockReturnValue({
       getPost: jest.fn().mockResolvedValue({ posts: [{ type: 'SomeOtherType' }] }),
     });
@@ -98,9 +96,7 @@ describe('PostService', () => {
 
   it('should set fetched_at on getPost error', async () => {
     service.registerOwner('post1', 'UC1');
-    repo.findUnfetched.mockResolvedValue([
-      { id: 'post1', channel_id: 'UCAuthor' },
-    ]);
+    repo.findToFetch.mockResolvedValue([makePost('post1', 'UCAuthor')]);
     ytProvider.getYt.mockReturnValue({
       getPost: jest.fn().mockRejectedValue(new Error('network error')),
     });
@@ -115,8 +111,8 @@ describe('PostService', () => {
 
   it('should delete ownerMap entry after processing', async () => {
     service.registerOwner('post1', 'UC1');
-    repo.findUnfetched
-      .mockResolvedValueOnce([{ id: 'post1', channel_id: 'UCAuthor' }])
+    repo.findToFetch
+      .mockResolvedValueOnce([makePost('post1', 'UCAuthor')])
       .mockResolvedValueOnce([]);
 
     ytProvider.getYt.mockReturnValue({
@@ -134,15 +130,14 @@ describe('PostService', () => {
     service.registerOwner('post2', 'UC1');
     service.registerOwner('post3', 'UC2');
 
-    repo.findUnfetched.mockResolvedValue([
-      { id: 'post1', channel_id: 'UCA' },
-      { id: 'post2', channel_id: 'UCB' },
-      { id: 'post3', channel_id: 'UCC' },
+    repo.findToFetch.mockResolvedValue([
+      makePost('post1', 'UCA'),
+      makePost('post2', 'UCB'),
+      makePost('post3', 'UCC'),
     ]);
-
     ytProvider.getYt.mockReturnValue({
       getPost: jest.fn().mockResolvedValue({
-        posts: [{ type: 'BackstagePost', content: { text: 'x' }, attachment: null, created_at: 1 }],
+        posts: [{ type: 'BackstagePost', content: { text: 'x' }, attachment: null }],
       }),
     });
 
@@ -152,11 +147,9 @@ describe('PostService', () => {
     expect(repo.update).toHaveBeenCalledTimes(3);
   });
 
-  it('should not call getYt when no unfetched posts', async () => {
-    repo.findUnfetched.mockResolvedValue([]);
-
+  it('should not call findToFetch when no registered posts', async () => {
     await service.pollPosts();
 
-    expect(ytProvider.getYt).not.toHaveBeenCalled();
+    expect(repo.findToFetch).not.toHaveBeenCalled();
   });
 });

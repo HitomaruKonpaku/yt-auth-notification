@@ -16,16 +16,11 @@ export class ChannelService {
     return this.repo.findById(id);
   }
 
-  async upsert(
-    id: string,
-    handle: string,
-    name: string,
-    thumbnail_url?: string,
-  ): Promise<void> {
+  async upsert(data: Partial<Channel>): Promise<void> {
     try {
-      await this.repo.upsert({ id, handle, name, thumbnail_url });
+      await this.repo.upsert(data);
     } catch (err) {
-      this.logger.error(`Channel upsert failed for ${id}`, err);
+      this.logger.error(`Channel upsert failed for ${data.id}`, err);
     }
   }
 }

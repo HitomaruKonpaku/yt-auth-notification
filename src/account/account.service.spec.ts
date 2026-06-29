@@ -3,23 +3,30 @@ import { AccountService } from './account.service';
 import { ChannelService } from '../channel/channel.service';
 import { ConfigService } from '../config/config.service';
 import { SseService } from '../sse/sse.service';
+import { YTProvider } from '../youtube/yt.provider';
+import { CookieService } from '../youtube/cookie.service';
+import { EventEmitter } from 'events';
 
 describe('AccountService', () => {
   let service: AccountService;
   let channelService: { upsert: jest.Mock };
   let configService: { getConfig: jest.Mock };
   let sseService: { push: jest.Mock };
+  let ytProvider: { initYt: jest.Mock; setYt: jest.Mock };
+  let cookieService: EventEmitter & { getCookieString?: jest.Mock };
 
   const makeChannel = (opts: {
     channel_handle: string;
     account_name: string;
     is_selected?: boolean;
+    is_disabled?: boolean;
     account_photo?: { url: string }[];
     supportedTokens?: any[];
   }) => ({
     channel_handle: opts.channel_handle,
     account_name: opts.account_name,
     is_selected: opts.is_selected ?? true,
+    is_disabled: opts.is_disabled ?? false,
     account_photo: opts.account_photo ?? [],
     endpoint: opts.supportedTokens ? {
       payload: { supportedTokens: opts.supportedTokens },
@@ -41,37 +48,46 @@ describe('AccountService', () => {
     channelService = { upsert: jest.fn().mockResolvedValue(undefined) };
     configService = { getConfig: jest.fn().mockReturnValue({ accountInitRetries: 3 }) };
     sseService = { push: jest.fn() };
+    ytProvider = { initYt: jest.fn(), setYt: jest.fn() };
+    cookieService = Object.assign(new EventEmitter(), { getCookieString: jest.fn() });
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AccountService,
         { provide: ChannelService, useValue: channelService },
         { provide: ConfigService, useValue: configService },
         { provide: SseService, useValue: sseService },
+        { provide: YTProvider, useValue: ytProvider },
+        { provide: CookieService, useValue: cookieService },
       ],
     }).compile();
     service = module.get<AccountService>(AccountService);
   });
 
-  it('should discover and store active channel', async () => {
+  it('should discover and store active channel, reuse main session', async () => {
     const ch = makeChannel({
       channel_handle: '@test',
       account_name: 'Test Channel',
       account_photo: [{ url: 'https://img/photo.jpg' }],
     });
     const yt = makeYt([ch], { '@test': 'UC123' });
+    ytProvider.initYt.mockResolvedValueOnce(yt); // __main__ session
 
-    await service.initialize(yt as any);
+    await service.initialize();
 
-    const info = service.get('UC123');
+    const info = service.getAccount('UC123');
     expect(info).toBeDefined();
     expect(info!.handle).toBe('@test');
     expect(info!.name).toBe('Test Channel');
     expect(info!.thumbnail_url).toBe('https://img/photo.jpg');
+    expect(info!.is_selected).toBe(true);
+    expect(info!.is_disabled).toBe(false);
     expect(info!.pageId).toBeUndefined();
-    expect(channelService.upsert).toHaveBeenCalledWith('UC123', '@test', 'Test Channel', 'https://img/photo.jpg');
+    expect(ytProvider.setYt).toHaveBeenCalledWith('UC123', yt);
+    expect(channelService.upsert).toHaveBeenCalledWith({ id: 'UC123', handle: '@test', name: 'Test Channel', thumbnail_url: 'https://img/photo.jpg' });
   });
 
-  it('should extract pageId for inactive channel', async () => {
+  it('should extract pageId and create new session for inactive channel', async () => {
     const ch = makeChannel({
       channel_handle: '@inactive',
       account_name: 'Inactive Channel',
@@ -79,23 +95,39 @@ describe('AccountService', () => {
       supportedTokens: [{ pageIdToken: { pageId: 'PAGE_789' } }],
     });
     const yt = makeYt([ch], { '@inactive': 'UC456' });
+    ytProvider.initYt.mockResolvedValueOnce(yt); // __main__ session
 
-    await service.initialize(yt as any);
+    await service.initialize();
 
-    const info = service.get('UC456');
+    const info = service.getAccount('UC456');
+    expect(info!.is_selected).toBe(false);
     expect(info!.pageId).toBe('PAGE_789');
+    expect(ytProvider.initYt).toHaveBeenCalledWith('UC456', 'PAGE_789');
   });
 
-  it('should lock insertion order (null entries before patching)', async () => {
-    const ch = makeChannel({ channel_handle: '@a', account_name: 'A' });
-    const yt = makeYt([ch], { '@a': 'UC1' });
+  it('should log error and return when getInfo returns empty', async () => {
+    const yt = makeYt([]);
+    ytProvider.initYt.mockResolvedValueOnce(yt);
 
-    await service.initialize(yt as any);
+    await service.initialize();
 
-    // Entry should be AccountInfo (not null) after init
-    const info = service.get('UC1');
-    expect(info).not.toBeNull();
-    expect(info!.handle).toBe('@a');
+    expect(Array.from(service.accounts)).toHaveLength(0);
+    expect(service.isInitialized).toBe(false);
+    expect(ytProvider.setYt).not.toHaveBeenCalled();
+  });
+
+  it('should log error and return when getInfo throws', async () => {
+    const yt = {
+      account: {
+        getInfo: jest.fn().mockRejectedValue(new Error('API error')),
+      },
+    };
+    ytProvider.initYt.mockResolvedValueOnce(yt);
+
+    await service.initialize();
+
+    expect(Array.from(service.accounts)).toHaveLength(0);
+    expect(service.isInitialized).toBe(false);
   });
 
   it('should retry per channel up to accountInitRetries', async () => {
@@ -106,11 +138,12 @@ describe('AccountService', () => {
 
     const ch = makeChannel({ channel_handle: '@err', account_name: 'Err' });
     const yt = makeYt([ch], { '@err': 'UCerr' });
+    ytProvider.initYt.mockResolvedValueOnce(yt);
 
-    await service.initialize(yt as any);
+    await service.initialize();
 
     expect(channelService.upsert).toHaveBeenCalledTimes(3);
-    expect(service.get('UCerr')).toBeDefined();
+    expect(service.getAccount('UCerr')).toBeDefined();
   });
 
   it('should skip channel after exhausting retries', async () => {
@@ -118,34 +151,50 @@ describe('AccountService', () => {
 
     const ch = makeChannel({ channel_handle: '@dead', account_name: 'Dead' });
     const yt = makeYt([ch], { '@dead': 'UCdead' });
+    ytProvider.initYt.mockResolvedValueOnce(yt);
 
-    await service.initialize(yt as any);
+    await service.initialize();
 
     expect(channelService.upsert).toHaveBeenCalledTimes(3);
-    // Entry stays null after all retries fail
     const entries = Array.from(service.accounts);
-    expect(entries).toHaveLength(0); // null entries filtered out
+    expect(entries).toHaveLength(0);
   });
 
   it('should push account.list via SSE after init', async () => {
     const ch = makeChannel({ channel_handle: '@test', account_name: 'Test' });
     const yt = makeYt([ch], { '@test': 'UC123' });
+    ytProvider.initYt.mockResolvedValueOnce(yt);
 
-    await service.initialize(yt as any);
+    await service.initialize();
 
     expect(sseService.push).toHaveBeenCalledWith('account.list', {
-      items: [{ id: 'UC123', handle: '@test', name: 'Test', thumbnail_url: undefined }],
+      items: [{ id: 'UC123', handle: '@test', name: 'Test', thumbnail_url: undefined, is_selected: true, is_disabled: false, pageId: undefined }],
     });
   });
 
   it('should initialize only once', async () => {
     const ch = makeChannel({ channel_handle: '@a', account_name: 'A' });
     const yt = makeYt([ch], { '@a': 'UC1' });
+    ytProvider.initYt.mockResolvedValueOnce(yt);
 
-    await service.initialize(yt as any);
-    await service.initialize(yt as any);
+    await service.initialize();
+    await service.initialize();
 
-    // getInfo called only once
-    expect(yt.account.getInfo).toHaveBeenCalledTimes(1);
+    expect(ytProvider.initYt).toHaveBeenCalledTimes(1);
+  });
+
+  it('should reset on cookie changed event', async () => {
+    const ch = makeChannel({ channel_handle: '@a', account_name: 'A' });
+    const yt = makeYt([ch], { '@a': 'UC1' });
+    ytProvider.initYt.mockResolvedValueOnce(yt);
+
+    await service.initialize();
+    expect(service.isInitialized).toBe(true);
+    expect(Array.from(service.accounts)).toHaveLength(1);
+
+    cookieService.emit('changed');
+
+    expect(service.isInitialized).toBe(false);
+    expect(Array.from(service.accounts)).toHaveLength(0);
   });
 });
