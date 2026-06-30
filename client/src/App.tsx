@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   fetchAccounts,
   fetchNotifications,
+  fetchSessionStatus,
   type NotificationItem,
 } from './api';
 import AppFooter from './components/AppFooter';
@@ -56,6 +57,7 @@ export default function App() {
   const channelRef = useRef<string | null>(null);
   const notifEnabledRef = useRef(false);
   const offsetRef = useRef(0);
+  const sessionExpiredNotifRef = useRef<string | null>(null);
 
   // Sync refs each render so SSE handler always sees latest values
   channelRef.current = selectedChannelId;
@@ -113,6 +115,24 @@ export default function App() {
     loadAccounts();
     loadNotifications(channelId, urlLimit, urlOffset);
 
+    const showSessionExpired = () => {
+      if (!sessionExpiredNotifRef.current) {
+        sessionExpiredNotifRef.current = notifications.show({
+          title: 'Session Expired',
+          message: 'Cookie has expired — please update cookies.txt',
+          color: 'red',
+          autoClose: false,
+          position: 'top-right',
+        });
+      }
+    };
+
+    fetchSessionStatus().then((status) => {
+      if (status.expired) {
+        showSessionExpired();
+      }
+    });
+
     if ('Notification' in window && Notification.permission === 'granted') {
       setPermission('granted');
       setNotifEnabled(true);
@@ -157,9 +177,12 @@ export default function App() {
       setTotal((prev) => prev + 1);
     };
 
+    const handleSessionExpired = () => { showSessionExpired(); };
+
     const handlers: Record<string, (data: any) => void> = {
       'account.list': handleAccountList,
       'notification.new': handleNotificationNew,
+      'session.expired': handleSessionExpired,
     };
 
     const es = new EventSource('/sse');

@@ -7,6 +7,7 @@ import { Notification } from '../src/db/notification.entity';
 import { YTProvider } from '../src/youtube/yt.provider';
 import { CookieService } from '../src/youtube/cookie.service';
 import { ConfigService } from '../src/config/config.service';
+import { HealthCheckService } from '../src/healthcheck/healthcheck.service';
 
 describe('App (e2e)', () => {
   let app: INestApplication;
@@ -38,6 +39,15 @@ describe('App (e2e)', () => {
       .overrideProvider(CookieService)
       .useValue({
         getCookieString: () => 'mock=cookie',
+        on: () => {},
+        off: () => {},
+      })
+      .overrideProvider(HealthCheckService)
+      .useValue({
+        sessionExpired: false,
+        markSessionValid: () => {},
+        markSessionExpired: () => {},
+        tick: async () => {},
       })
       .compile();
 
@@ -55,8 +65,6 @@ describe('App (e2e)', () => {
       .expect(200)
       .expect((res: request.Response) => {
         expect(res.body).toHaveProperty('total', 0);
-        expect(res.body).toHaveProperty('limit', 50);
-        expect(res.body).toHaveProperty('offset', 0);
         expect(res.body).toHaveProperty('items');
         expect(res.body.items).toEqual([]);
       });

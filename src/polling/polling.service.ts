@@ -3,6 +3,7 @@ import { YT, YTNodes } from 'youtubei.js';
 import { AccountService } from '../account/account.service';
 import { ConfigService } from '../config/config.service';
 import { DiscordService } from '../discord/discord.service';
+import type { NotificationLike } from '../notification/notification.interface';
 import { NotificationService } from '../notification/notification.service';
 import { PostService } from '../post/post.service';
 import { YTProvider } from '../youtube/yt.provider';
@@ -90,12 +91,15 @@ export class PollingService {
       this.logger.log(`[${channelId}] Total: ${contents.length} notification(s)`);
 
       const newItems = await this.notificationService.processNotifications(contents, channelId);
-
-      for (const item of newItems) {
-        await this.discordService.relayNotification(item);
-      }
+      this.broadcastNewItems(newItems);
     } catch (err) {
       this.logger.error(`[${channelId}] Poll failed`, err);
+    }
+  }
+
+  private async broadcastNewItems(items: NotificationLike[]) {
+    for (const item of items) {
+      await this.discordService.relayNotification(item);
     }
   }
 }

@@ -34,6 +34,14 @@ export interface AppConfig {
    */
   accountInitRetries?: number;
 
+  /**
+   * Interval in milliseconds between session health checks.
+   * Calls yt.account.getInfo() on the selected account.
+   * 0 or negative disables.
+   * @default 1800000 (30 minutes)
+   */
+  healthCheckIntervalMs?: number;
+
   webhooks?: {
     discord?: DiscordWebhookConfig[];
   };

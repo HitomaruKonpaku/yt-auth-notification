@@ -62,3 +62,17 @@ export async function fetchAccounts(): Promise<AccountsResponse> {
     throw err;
   }
 }
+
+export interface SessionStatus {
+  expired: boolean;
+}
+
+export async function fetchSessionStatus(): Promise<SessionStatus> {
+  try {
+    const res = await fetch('/api/healthcheck/session');
+    return res.json();
+  } catch (err) {
+    console.error('fetchSessionStatus failed:', err);
+    return { expired: false };
+  }
+}

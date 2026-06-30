@@ -7,6 +7,7 @@ import { ConfigService } from '../config/config.service';
 import { SseService } from '../sse/sse.service';
 import { CookieService } from '../youtube/cookie.service';
 import { YTProvider } from '../youtube/yt.provider';
+import { HealthCheckService } from '../healthcheck/healthcheck.service';
 import type { AccountInfo } from './account.interface';
 
 @Injectable()
@@ -22,6 +23,7 @@ export class AccountService {
     private readonly sseService: SseService,
     private readonly ytProvider: YTProvider,
     private readonly cookieService: CookieService,
+    private readonly healthCheckService: HealthCheckService,
   ) {
     this.cookieService.on('changed', () => {
       this.logger.log('Cookie file changed, resetting accounts');
@@ -66,6 +68,11 @@ export class AccountService {
       this.logger.debug('yt.account.getInfo(true)');
       const accountInfo = await yt.account.getInfo(true);
       channels = accountInfo ?? [];
+      if (channels.length > 0) {
+        this.healthCheckService.markSessionValid();
+      } else {
+        this.healthCheckService.markSessionExpired();
+      }
     } catch (err) {
       this.logger.error('yt.account.getInfo(true) failed', err);
       return;

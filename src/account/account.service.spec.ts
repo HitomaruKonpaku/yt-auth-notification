@@ -5,6 +5,7 @@ import { ConfigService } from '../config/config.service';
 import { SseService } from '../sse/sse.service';
 import { YTProvider } from '../youtube/yt.provider';
 import { CookieService } from '../youtube/cookie.service';
+import { HealthCheckService } from '../healthcheck/healthcheck.service';
 import { EventEmitter } from 'events';
 
 describe('AccountService', () => {
@@ -14,6 +15,7 @@ describe('AccountService', () => {
   let sseService: { push: jest.Mock };
   let ytProvider: { initYt: jest.Mock; setYt: jest.Mock };
   let cookieService: EventEmitter & { getCookieString?: jest.Mock };
+  let healthCheckService: { markSessionValid: jest.Mock; markSessionExpired: jest.Mock };
 
   const makeChannel = (opts: {
     channel_handle: string;
@@ -50,6 +52,7 @@ describe('AccountService', () => {
     sseService = { push: jest.fn() };
     ytProvider = { initYt: jest.fn(), setYt: jest.fn() };
     cookieService = Object.assign(new EventEmitter(), { getCookieString: jest.fn() });
+    healthCheckService = { markSessionValid: jest.fn(), markSessionExpired: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -59,6 +62,7 @@ describe('AccountService', () => {
         { provide: SseService, useValue: sseService },
         { provide: YTProvider, useValue: ytProvider },
         { provide: CookieService, useValue: cookieService },
+        { provide: HealthCheckService, useValue: healthCheckService },
       ],
     }).compile();
     service = module.get<AccountService>(AccountService);
@@ -85,6 +89,8 @@ describe('AccountService', () => {
     expect(info!.pageId).toBeUndefined();
     expect(ytProvider.setYt).toHaveBeenCalledWith('UC123', yt);
     expect(channelService.upsert).toHaveBeenCalledWith({ id: 'UC123', handle: '@test', name: 'Test Channel', thumbnail_url: 'https://img/photo.jpg' });
+    expect(healthCheckService.markSessionValid).toHaveBeenCalled();
+    expect(healthCheckService.markSessionExpired).not.toHaveBeenCalled();
   });
 
   it('should extract pageId and create new session for inactive channel', async () => {
@@ -114,6 +120,8 @@ describe('AccountService', () => {
     expect(Array.from(service.accounts)).toHaveLength(0);
     expect(service.isInitialized).toBe(false);
     expect(ytProvider.setYt).not.toHaveBeenCalled();
+    expect(healthCheckService.markSessionExpired).toHaveBeenCalled();
+    expect(healthCheckService.markSessionValid).not.toHaveBeenCalled();
   });
 
   it('should log error and return when getInfo throws', async () => {

@@ -31,6 +31,7 @@ export class ConfigService {
       maxBackoffMs: Number(data.maxBackoffMs) || 30 * 60 * 1000,
       sseKeepaliveMs: Number(data.sseKeepaliveMs) || 30000,
       accountInitRetries: Number(data.accountInitRetries) || 3,
+      healthCheckIntervalMs: Number(data.healthCheckIntervalMs) || 1800000,
       webhooks: {
         discord: discordRaw
           .filter(w => typeof w.url === 'string' && w.url.length > 0)

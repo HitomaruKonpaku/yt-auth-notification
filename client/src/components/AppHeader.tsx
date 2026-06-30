@@ -128,24 +128,24 @@ export default function AppHeader(props: Props) {
         <Divider mb="md" />
         <Stack gap="sm">
           <Group wrap="nowrap" justify="space-between">
-            <Text size="sm">Use absolute time</Text>
-            <Switch
-              checked={useAbsoluteTime}
-              onChange={toggleAbsoluteTime}
-              size="sm"
-            />
-          </Group>
-
-          <Group wrap="nowrap" justify="space-between">
             <Text size="sm">Limit</Text>
             <Select
-              data={['5', '10', '20', '50', '100']}
+              data={['5', '10', '20', '50']}
               value={String(limit)}
               onChange={(v) => onChangeLimit(Number(v))}
               size="md"
               w={80}
               allowDeselect={false}
               withAlignedLabels
+            />
+          </Group>
+
+          <Group wrap="nowrap" justify="space-between">
+            <Text size="sm">Use absolute time</Text>
+            <Switch
+              checked={useAbsoluteTime}
+              onChange={toggleAbsoluteTime}
+              size="sm"
             />
           </Group>
 
