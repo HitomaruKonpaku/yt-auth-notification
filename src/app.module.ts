@@ -37,14 +37,14 @@ import { YoutubeModule } from './youtube/youtube.module';
     // account
     AccountModule,
 
-    // healthcheck
-    HealthCheckModule,
-
     // youtube
     YoutubeModule,
     ChannelModule,
     PostModule,
     NotificationModule,
+
+    // healthcheck
+    HealthCheckModule,
 
     // ui
     DisplayModule,

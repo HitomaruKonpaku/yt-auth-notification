@@ -4,10 +4,10 @@ import { YTNodes } from 'youtubei.js';
 import { ChannelService } from '../channel/channel.service';
 import { extractPageId } from '../channel/channel.util';
 import { ConfigService } from '../config/config.service';
+import { HealthCheckService } from '../healthcheck/healthcheck.service';
 import { SseService } from '../sse/sse.service';
 import { CookieService } from '../youtube/cookie.service';
 import { YTProvider } from '../youtube/yt.provider';
-import { HealthCheckService } from '../healthcheck/healthcheck.service';
 import type { AccountInfo } from './account.interface';
 
 @Injectable()
@@ -68,11 +68,6 @@ export class AccountService {
       this.logger.debug('yt.account.getInfo(true)');
       const accountInfo = await yt.account.getInfo(true);
       channels = accountInfo ?? [];
-      if (channels.length > 0) {
-        this.healthCheckService.markSessionValid();
-      } else {
-        this.healthCheckService.markSessionExpired();
-      }
     } catch (err) {
       this.logger.error('yt.account.getInfo(true) failed', err);
       return;
@@ -80,10 +75,12 @@ export class AccountService {
 
     if (channels.length === 0) {
       this.logger.error('No channels found — check your account/cookies');
+      this.healthCheckService.markSessionExpired();
       return;
     }
 
     this.logger.log(`Found ${channels.length} channel(s)`);
+    this.healthCheckService.markSessionValid();
 
     for (const channel of channels) {
       await this.initializeChannel(yt, channel);

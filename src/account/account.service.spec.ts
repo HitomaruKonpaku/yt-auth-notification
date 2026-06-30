@@ -2,10 +2,10 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AccountService } from './account.service';
 import { ChannelService } from '../channel/channel.service';
 import { ConfigService } from '../config/config.service';
+import { HealthCheckService } from '../healthcheck/healthcheck.service';
 import { SseService } from '../sse/sse.service';
 import { YTProvider } from '../youtube/yt.provider';
 import { CookieService } from '../youtube/cookie.service';
-import { HealthCheckService } from '../healthcheck/healthcheck.service';
 import { EventEmitter } from 'events';
 
 describe('AccountService', () => {

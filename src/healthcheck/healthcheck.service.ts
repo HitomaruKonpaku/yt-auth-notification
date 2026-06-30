@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, Logger, OnModuleInit, forwardRef } from '@nestjs/common';
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { AccountService } from '../account/account.service';
 import { ConfigService } from '../config/config.service';
@@ -14,6 +14,7 @@ export class HealthCheckService implements OnModuleInit {
   constructor(
     private readonly schedulerRegistry: SchedulerRegistry,
     private readonly configService: ConfigService,
+    @Inject(forwardRef(() => AccountService))
     private readonly accountService: AccountService,
     private readonly ytProvider: YTProvider,
     private readonly sseService: SseService,
