@@ -1,5 +1,6 @@
 import { Anchor, Avatar, Group, Image, Indicator, Stack, Text } from '@mantine/core';
 import { useHover } from '@mantine/hooks';
+import { IconClock } from '@tabler/icons-react';
 import { DateTime } from 'luxon';
 import { useEffect, useState } from 'react';
 import type { NotificationItem as NotifItem } from '../api';
@@ -12,9 +13,10 @@ interface Props {
 
 export default function NotificationItem({ item }: Props) {
   const { hovered, ref } = useHover();
-  const { useAbsoluteTime } = useConfig();
-  const { newNotificationIds, dismissNewNotificationId } = useData();
+  const { useAbsoluteTime, showOwnerProfile } = useConfig();
+  const { accounts, newNotificationIds, dismissNewNotificationId } = useData();
   const isNew = newNotificationIds.has(item.id);
+  const owner = item.owner_id ? accounts.find((a) => a.id === item.owner_id) : null;
   const [, setTick] = useState(0);
 
   useEffect(() => {
@@ -50,7 +52,16 @@ export default function NotificationItem({ item }: Props) {
       </Indicator>
       <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
         <Text size="sm" ta="justify">{item.short_message.text}</Text>
-        <Text size="xs" ff="monospace">{timeDisplay}</Text>
+        <Group gap={6}>
+          <IconClock size={16} />
+          <Text size="xs" ff="monospace">{timeDisplay}</Text>
+        </Group>
+        {showOwnerProfile && owner && (
+          <Group gap={6}>
+            <Avatar src={owner.thumbnail_url} size={16} />
+            <Text size="xs" ff="monospace">{owner.handle}</Text>
+          </Group>
+        )}
       </Stack>
       {item.video_id && (
         <Image

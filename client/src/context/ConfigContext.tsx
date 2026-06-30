@@ -1,37 +1,44 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
 
 interface Config {
-  useAbsoluteTime: boolean;
   limit: number;
+  useAbsoluteTime: boolean;
+  showOwnerProfile: boolean;
 }
 
 interface ConfigContextValue {
-  useAbsoluteTime: boolean;
-  toggleAbsoluteTime: () => void;
   limit: number;
   setLimit: (n: number) => void;
+  useAbsoluteTime: boolean;
+  toggleAbsoluteTime: () => void;
+  showOwnerProfile: boolean;
+  toggleOwnerProfile: () => void;
 }
 
 const DEFAULT_LIMIT = 10;
 
 const ConfigContext = createContext<ConfigContextValue>({
-  useAbsoluteTime: false,
-  toggleAbsoluteTime: () => { },
   limit: DEFAULT_LIMIT,
   setLimit: () => { },
+  useAbsoluteTime: false,
+  toggleAbsoluteTime: () => { },
+  showOwnerProfile: false,
+  toggleOwnerProfile: () => { },
 });
 
 export function readConfig(): Config {
   try {
     const stored = JSON.parse(localStorage.getItem('config') ?? '{}');
     return {
-      useAbsoluteTime: stored.useAbsoluteTime === true,
       limit: Number(stored.limit) || DEFAULT_LIMIT,
+      useAbsoluteTime: stored.useAbsoluteTime === true,
+      showOwnerProfile: stored.showOwnerProfile === true,
     };
   } catch {
     return {
-      useAbsoluteTime: false,
       limit: DEFAULT_LIMIT,
+      useAbsoluteTime: false,
+      showOwnerProfile: false,
     };
   }
 }
@@ -44,14 +51,6 @@ function writeConfig(partial: Partial<Config>) {
 export function ConfigProvider({ children }: { children: ReactNode }) {
   const [config, setConfig] = useState(readConfig);
 
-  const toggleAbsoluteTime = () => {
-    setConfig((prev) => {
-      const next = { ...prev, useAbsoluteTime: !prev.useAbsoluteTime };
-      writeConfig({ useAbsoluteTime: next.useAbsoluteTime });
-      return next;
-    });
-  };
-
   const setLimit = (n: number) => {
     setConfig((prev) => {
       const next = { ...prev, limit: n };
@@ -60,12 +59,30 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const toggleAbsoluteTime = () => {
+    setConfig((prev) => {
+      const next = { ...prev, useAbsoluteTime: !prev.useAbsoluteTime };
+      writeConfig({ useAbsoluteTime: next.useAbsoluteTime });
+      return next;
+    });
+  };
+
+  const toggleOwnerProfile = () => {
+    setConfig((prev) => {
+      const next = { ...prev, showOwnerProfile: !prev.showOwnerProfile };
+      writeConfig({ showOwnerProfile: next.showOwnerProfile });
+      return next;
+    });
+  };
+
   return (
     <ConfigContext.Provider value={{
-      useAbsoluteTime: config.useAbsoluteTime,
-      toggleAbsoluteTime,
       limit: config.limit,
       setLimit,
+      useAbsoluteTime: config.useAbsoluteTime,
+      toggleAbsoluteTime,
+      showOwnerProfile: config.showOwnerProfile,
+      toggleOwnerProfile,
     }}>
       {children}
     </ConfigContext.Provider>

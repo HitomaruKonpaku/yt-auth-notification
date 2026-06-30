@@ -58,6 +58,7 @@ export default function App() {
   const notifEnabledRef = useRef(false);
   const offsetRef = useRef(0);
   const sessionExpiredNotifRef = useRef<string | null>(null);
+  const prevLimitRef = useRef<number | null>(null);
 
   // Sync refs each render so SSE handler always sees latest values
   channelRef.current = selectedChannelId;
@@ -211,6 +212,19 @@ export default function App() {
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // React to limit changes from SettingsContent (skip initial mount + init-time setLimit)
+  useEffect(() => {
+    if (prevLimitRef.current === null) {
+      prevLimitRef.current = limit;
+      return;
+    }
+    if (prevLimitRef.current === limit) return;
+    prevLimitRef.current = limit;
+    setOffset(0);
+    writeUrl(selectedChannelId, limit, 0);
+    loadNotifications(selectedChannelId, limit, 0);
+  }, [limit]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const selectChannel = useCallback((channelId: string | null) => {
     setSelectedChannelId(channelId);
     setOffset(0);
@@ -223,13 +237,6 @@ export default function App() {
     writeUrl(selectedChannelId, limit, newOffset);
     loadNotifications(selectedChannelId, limit, newOffset);
   }, [selectedChannelId, limit, loadNotifications]);
-
-  const changeLimit = useCallback((newLimit: number) => {
-    setLimit(newLimit);
-    setOffset(0);
-    writeUrl(selectedChannelId, newLimit, 0);
-    loadNotifications(selectedChannelId, newLimit, 0);
-  }, [selectedChannelId, setLimit, loadNotifications]);
 
   const reload = useCallback(() => {
     loadNotifications(selectedChannelId, limit, offset);
@@ -278,7 +285,6 @@ export default function App() {
                 onSettingsClose={() => setSettingsOpen(false)}
                 onSelectChannel={selectChannel}
                 onToggleNotif={toggleNotif}
-                onChangeLimit={changeLimit}
                 onReload={reload}
               />
             </Container>

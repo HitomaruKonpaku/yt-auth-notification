@@ -1,9 +1,9 @@
-import { ActionIcon, Avatar, Code, Divider, Drawer, Group, Indicator, Menu, Select, Stack, Switch, Text } from '@mantine/core';
+import { ActionIcon, Avatar, Divider, Drawer, Group, Indicator, Menu, Text } from '@mantine/core';
 import { IconBell, IconBellFilled, IconBellOff, IconHome, IconList, IconRefresh, IconSettings } from '@tabler/icons-react';
 import { useCallback } from 'react';
 import type { Account } from '../api';
-import { useConfig } from '../context/ConfigContext';
 import { useData } from '../context/DataContext';
+import SettingsContent from './SettingsContent';
 
 interface Props {
   notifEnabled: boolean;
@@ -13,7 +13,6 @@ interface Props {
   onSettingsClose: () => void;
   onSelectChannel: (id: string | null) => void;
   onToggleNotif: () => void;
-  onChangeLimit: (n: number) => void;
   onReload: () => void;
 }
 
@@ -36,12 +35,11 @@ export default function AppHeader(props: Props) {
   const {
     notifEnabled, notifLabel,
     settingsOpen, onSettingsOpen, onSettingsClose,
-    onSelectChannel, onToggleNotif, onChangeLimit, onReload,
+    onSelectChannel, onToggleNotif, onReload,
   } = props;
 
   const { accounts, selectedChannelId, newNotificationIds, resetNewNotificationIds } = useData();
   const newCount = newNotificationIds.size;
-  const { useAbsoluteTime, toggleAbsoluteTime, limit } = useConfig();
   const selected = selectedAccount(accounts, selectedChannelId);
 
   const onResetNewCount = useCallback(() => {
@@ -126,34 +124,7 @@ export default function AppHeader(props: Props) {
         size="xs"
       >
         <Divider mb="md" />
-        <Stack gap="sm">
-          <Group wrap="nowrap" justify="space-between">
-            <Text size="sm">Limit</Text>
-            <Select
-              data={['5', '10', '20', '50']}
-              value={String(limit)}
-              onChange={(v) => onChangeLimit(Number(v))}
-              size="md"
-              w={80}
-              allowDeselect={false}
-              withAlignedLabels
-            />
-          </Group>
-
-          <Group wrap="nowrap" justify="space-between">
-            <Text size="sm">Use absolute time</Text>
-            <Switch
-              checked={useAbsoluteTime}
-              onChange={toggleAbsoluteTime}
-              size="sm"
-            />
-          </Group>
-
-          <Group wrap="nowrap" justify="space-between">
-            <Text size="sm">Version</Text>
-            <Code>{window.__VERSION__ || 'dev'}</Code>
-          </Group>
-        </Stack>
+        <SettingsContent />
       </Drawer>
 
       <Group gap="sm" ml="auto" wrap="nowrap">
