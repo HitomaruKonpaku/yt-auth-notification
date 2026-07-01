@@ -1,6 +1,6 @@
-import { Anchor, Avatar, Group, Image, Indicator, Stack, Text } from '@mantine/core';
+import { ActionIcon, Anchor, Avatar, Group, Image, Indicator, Menu, Stack, Text } from '@mantine/core';
 import { useHover } from '@mantine/hooks';
-import { IconClock } from '@tabler/icons-react';
+import { IconClock, IconDotsVertical } from '@tabler/icons-react';
 import { DateTime } from 'luxon';
 import { useEffect, useState } from 'react';
 import type { NotificationItem as NotifItem } from '../api';
@@ -73,6 +73,18 @@ export default function NotificationItem({ item }: Props) {
           referrerPolicy="no-referrer"
         />
       )}
+      <Menu>
+        <Menu.Target>
+          <ActionIcon variant="subtle" size="lg" radius="lg" onClick={(e) => { e.preventDefault(); }}>
+            <IconDotsVertical size={24} />
+          </ActionIcon>
+        </Menu.Target>
+        <Menu.Dropdown>
+          <Menu.Item onClick={() => { navigator.clipboard.writeText(item.id); }}>
+            Copy ID
+          </Menu.Item>
+        </Menu.Dropdown>
+      </Menu>
     </Group>
   );
 
