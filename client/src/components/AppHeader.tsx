@@ -79,7 +79,7 @@ export default function AppHeader(props: Props) {
             bg={selectedChannelId === null ? 'blue' : undefined}
             leftSection={<IconList size={22} />}
           >
-            <Text size="sm">ALL</Text>
+            <Text size="sm" ff="monospace">ALL</Text>
           </Menu.Item>
           {accounts.map((a) => (
             <Menu.Item
@@ -89,8 +89,8 @@ export default function AppHeader(props: Props) {
               bg={selectedChannelId === a.id ? 'blue' : undefined}
             >
               <div>
-                <Text size="xs" fw={500}>{a.handle}</Text>
-                <Text size="xs">{a.name}</Text>
+                <Text size="xs" ff="monospace" fw={500}>{a.handle}</Text>
+                <Text size="xs" ff="monospace">{a.name}</Text>
               </div>
             </Menu.Item>
           ))}
