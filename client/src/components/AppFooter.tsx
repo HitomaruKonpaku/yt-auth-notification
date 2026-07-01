@@ -1,4 +1,5 @@
 import { Group, Pagination, Text } from '@mantine/core';
+import { calcTotalPages } from '../paging';
 
 interface Props {
   offset: number;
@@ -9,7 +10,7 @@ interface Props {
 
 export default function AppFooter({ offset, limit, total, onGoTo }: Props) {
   const page = Math.floor(offset / limit) + 1;
-  const totalPages = Math.ceil(total / limit);
+  const totalPages = calcTotalPages(total, limit);
   const startItem = total === 0 ? 0 : offset + 1;
   const endItem = Math.min(offset + limit, total);
 

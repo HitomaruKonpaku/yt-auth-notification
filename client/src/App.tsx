@@ -15,6 +15,7 @@ import { useData } from './context/DataContext';
 import { HotkeyProvider, type HotkeyActions } from './context/HotkeyContext';
 import { useLoading } from './context/LoadingContext';
 import { setErrorHandler } from './error';
+import { calcLastPageOffset } from './paging';
 import { theme } from './theme';
 
 const DEFAULT_LIMIT = 10;
@@ -244,10 +245,10 @@ export default function App() {
 
   const hotkeyActions: HotkeyActions = {
     reload,
-    prevPage: () => goTo(Math.max(0, offset - limit)),
-    nextPage: () => goTo(offset + limit),
+    prevPage: () => goTo(Math.max(offset - limit, 0)),
+    nextPage: () => goTo(Math.min(offset + limit, calcLastPageOffset(total ?? 0, limit))),
     firstPage: () => goTo(0),
-    lastPage: () => goTo(Math.max(0, Math.ceil(total / limit) - 1) * limit),
+    lastPage: () => goTo(calcLastPageOffset(total, limit)),
     toggleSettings: () => setSettingsOpen((prev) => !prev),
   };
 
