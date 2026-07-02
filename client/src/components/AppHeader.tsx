@@ -3,44 +3,62 @@ import { IconBell, IconBellFilled, IconBellOff, IconHome, IconList, IconRefresh,
 import { useCallback } from 'react';
 import type { Account } from '../api';
 import { useData } from '../context/DataContext';
+import { usePermission } from '../context/PermissionContext';
 import SettingsContent from './SettingsContent';
 
 interface Props {
-  notifEnabled: boolean;
-  notifLabel: string;
   settingsOpen: boolean;
   onSettingsOpen: () => void;
   onSettingsClose: () => void;
   onSelectChannel: (id: string | null) => void;
-  onToggleNotif: () => void;
   onReload: () => void;
 }
 
-const selectedAccount = (accounts: Account[], id: string | null): Account | null =>
+const getSelectedAccount = (accounts: Account[], id: string | null): Account | null =>
   accounts.find((a) => a.id === id) ?? null;
 
-const notifButtonColor = (enabled: boolean, label: string) => {
-  if (enabled) return 'green';
-  if (label === 'blocked') return 'red';
+const getNotificationColor = (permission: NotificationPermission) => {
+  if (permission === 'granted') return 'green';
+  if (permission === 'denied') return 'red';
   return 'blue';
 };
 
-const notifIcon = (enabled: boolean, label: string) => {
-  if (enabled) return <IconBellFilled size={18} />;
-  if (label === 'blocked' || label === 'unsupported') return <IconBellOff size={18} />;
+const getNotificationIcon = (permission: NotificationPermission) => {
+  if (permission === 'granted') return <IconBellFilled size={18} />;
+  if (permission === 'denied') return <IconBellOff size={18} />;
   return <IconBell size={18} />;
 };
 
 export default function AppHeader(props: Props) {
   const {
-    notifEnabled, notifLabel,
-    settingsOpen, onSettingsOpen, onSettingsClose,
-    onSelectChannel, onToggleNotif, onReload,
+    settingsOpen,
+    onSettingsOpen,
+    onSettingsClose,
+    onSelectChannel,
+    onReload,
   } = props;
 
+  const { notificationPermission, setNotificationPermission } = usePermission();
   const { accounts, selectedChannelId, newNotificationIds, resetNewNotificationIds } = useData();
   const newCount = newNotificationIds.size;
-  const selected = selectedAccount(accounts, selectedChannelId);
+
+  const toggleNotif = useCallback(() => {
+    if (!('Notification' in window)) return;
+    if (notificationPermission === 'granted') return;
+    if (notificationPermission === 'denied') return;
+    Notification.requestPermission().then((p) => {
+      setNotificationPermission(p);
+    });
+  }, [notificationPermission, setNotificationPermission]);
+
+  const notificationLabel = (() => {
+    if (!('Notification' in window)) return 'unsupported';
+    if (notificationPermission === 'granted') return 'granted';
+    if (notificationPermission === 'denied') return 'denied';
+    return 'enable notifications?';
+  })();
+
+  const selected = getSelectedAccount(accounts, selectedChannelId);
 
   const onResetNewCount = useCallback(() => {
     resetNewNotificationIds();
@@ -109,12 +127,12 @@ export default function AppHeader(props: Props) {
 
       <ActionIcon
         variant="outline"
-        color={notifButtonColor(notifEnabled, notifLabel)}
+        color={getNotificationColor(notificationPermission)}
         size="lg"
-        onClick={onToggleNotif}
-        title={notifEnabled ? 'notifs on' : notifLabel}
+        onClick={toggleNotif}
+        title={notificationLabel}
       >
-        {notifIcon(notifEnabled, notifLabel)}
+        {getNotificationIcon(notificationPermission)}
       </ActionIcon>
 
       <Drawer

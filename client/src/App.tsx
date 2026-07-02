@@ -14,6 +14,7 @@ import { readConfig, useConfig } from './context/ConfigContext';
 import { useData } from './context/DataContext';
 import { HotkeyProvider, type HotkeyActions } from './context/HotkeyContext';
 import { useLoading } from './context/LoadingContext';
+import { usePermission } from './context/PermissionContext';
 import { setErrorHandler } from './error';
 import { calcLastPageOffset } from './paging';
 import { theme } from './theme';
@@ -40,30 +41,27 @@ function writeUrl(channelId: string | null, limit: number, offset: number) {
 }
 
 export default function App() {
+  const { loading, setLoading } = useLoading();
+  const { notificationPermission, setNotificationPermission } = usePermission();
   const { limit, setLimit } = useConfig();
   const [offset, setOffset] = useState(0);
   const [total, setTotal] = useState(0);
-  const { loading, setLoading } = useLoading();
   const {
     selectedChannelId, setSelectedChannelId,
     setAccounts, setNotifications,
     addNewNotificationId,
   } = useData();
-  const [notifEnabled, setNotifEnabled] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [permission, setPermission] = useState(() =>
-    'Notification' in window ? Notification.permission : 'denied'
-  );
   // Refs for SSE handler — avoids stale closure in the mount-time EventSource callback
   const channelRef = useRef<string | null>(null);
-  const notifEnabledRef = useRef(false);
+  const notificationPermissionRef = useRef<NotificationPermission>('default');
   const offsetRef = useRef(0);
   const sessionExpiredNotifRef = useRef<string | null>(null);
   const prevLimitRef = useRef<number | null>(null);
 
   // Sync refs each render so SSE handler always sees latest values
   channelRef.current = selectedChannelId;
-  notifEnabledRef.current = notifEnabled;
+  notificationPermissionRef.current = notificationPermission;
   offsetRef.current = offset;
 
   // Wire error notification bus — mount once
@@ -114,8 +112,9 @@ export default function App() {
     setLimit(urlLimit);
     setOffset(urlOffset);
 
-    loadAccounts();
-    loadNotifications(channelId, urlLimit, urlOffset);
+    if ('Notification' in window && Notification.permission === 'granted') {
+      setNotificationPermission('granted');
+    }
 
     const showSessionExpired = () => {
       if (!sessionExpiredNotifRef.current) {
@@ -135,10 +134,8 @@ export default function App() {
       }
     });
 
-    if ('Notification' in window && Notification.permission === 'granted') {
-      setPermission('granted');
-      setNotifEnabled(true);
-    }
+    loadAccounts();
+    loadNotifications(channelId, urlLimit, urlOffset);
 
     const handleAccountList = (data: any) => {
       if (data?.items) {
@@ -154,7 +151,7 @@ export default function App() {
 
       addNewNotificationId(item.id);
 
-      if (notifEnabledRef.current) {
+      if (notificationPermissionRef.current === 'granted') {
         const notif = new Notification(item.short_message.text, {
           icon: item.thumbnail_url || undefined,
           body: item.short_message.text,
@@ -252,21 +249,6 @@ export default function App() {
     toggleSettings: () => setSettingsOpen((prev) => !prev),
   };
 
-  const toggleNotif = useCallback(() => {
-    if (!('Notification' in window)) return;
-    if (notifEnabled) return; // once enabled, stays enabled
-    if (permission === 'denied') return;
-    Notification.requestPermission().then((p) => {
-      setPermission(p);
-      setNotifEnabled(p === 'granted');
-    });
-  }, [notifEnabled]);
-
-  const notifLabel = (() => {
-    if (!('Notification' in window)) return 'unsupported';
-    if (permission === 'denied') return 'blocked';
-    return 'enable notifs';
-  })();
 
   return (
     <MantineProvider defaultColorScheme="dark" theme={theme}>
@@ -279,13 +261,10 @@ export default function App() {
           <AppShell.Header>
             <Container maw={800} h="100%" px={{ base: 0, sm: 'md' }}>
               <AppHeader
-                notifEnabled={notifEnabled}
-                notifLabel={notifLabel}
                 settingsOpen={settingsOpen}
                 onSettingsOpen={() => setSettingsOpen(true)}
                 onSettingsClose={() => setSettingsOpen(false)}
                 onSelectChannel={selectChannel}
-                onToggleNotif={toggleNotif}
                 onReload={reload}
               />
             </Container>

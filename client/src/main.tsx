@@ -8,6 +8,7 @@ import { createRoot } from 'react-dom/client';
 import { ConfigProvider } from './context/ConfigContext';
 import { DataProvider } from './context/DataContext';
 import { LoadingProvider } from './context/LoadingContext';
+import { PermissionProvider } from './context/PermissionContext';
 
 import App from './App';
 
@@ -16,11 +17,13 @@ if (root) {
   createRoot(root).render(
     <StrictMode>
       <LoadingProvider>
-        <ConfigProvider>
-          <DataProvider>
-            <App />
-          </DataProvider>
-        </ConfigProvider>
+        <PermissionProvider>
+          <ConfigProvider>
+            <DataProvider>
+              <App />
+            </DataProvider>
+          </ConfigProvider>
+        </PermissionProvider>
       </LoadingProvider>
     </StrictMode>,
   );
