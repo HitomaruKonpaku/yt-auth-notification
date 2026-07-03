@@ -38,9 +38,10 @@ export class YTProvider {
       opts.on_behalf_of_user = pageId;
     }
 
+    this.logger.debug(`initYt: creating session for channel ${channelId}, pageId=${pageId ?? 'none'}`);
     const yt = await Innertube.create(opts);
     this.yts.set(channelId, yt);
-    this.logger.log(`Innertube session created for channel ${channelId}${pageId ? ' (inactive)' : ' (active)'}`);
+    this.logger.log(`initYt: session created for channel ${channelId}${pageId ? ' (inactive)' : ' (active)'}`);
     return yt;
   }
 }
