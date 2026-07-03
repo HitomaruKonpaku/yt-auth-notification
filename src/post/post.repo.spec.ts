@@ -7,10 +7,19 @@ describe('PostRepo', () => {
   let repo: PostRepo;
   let mockRepo: any;
 
+  let mockQb: any;
+
   beforeEach(async () => {
+    mockQb = {
+      select: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orWhere: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([]),
+    };
     mockRepo = {
       upsert: jest.fn(),
-      find: jest.fn(),
+      createQueryBuilder: jest.fn().mockReturnValue(mockQb),
       update: jest.fn(),
     };
 
@@ -38,6 +47,24 @@ describe('PostRepo', () => {
       },
       { conflictPaths: ['id'] },
     );
+  });
+
+  it('should return empty array for empty ids', async () => {
+    const result = await repo.findToFetch([]);
+    expect(result).toEqual([]);
+    expect(mockRepo.createQueryBuilder).not.toHaveBeenCalled();
+  });
+
+  it('should filter by fetched_at staleness (30 min)', async () => {
+    mockQb.getMany.mockResolvedValue([{ id: 'p1', channel_id: 'c1', created_at: 123 }]);
+
+    const result = await repo.findToFetch(['p1', 'p2']);
+
+    expect(mockRepo.createQueryBuilder).toHaveBeenCalledWith('post');
+    expect(mockQb.select).toHaveBeenCalledWith(['post.id', 'post.channel_id', 'post.created_at']);
+    expect(mockQb.andWhere).toHaveBeenCalledWith('post.id IN (:...ids)', { ids: ['p1', 'p2'] });
+    expect(mockQb.getMany).toHaveBeenCalled();
+    expect(result).toEqual([{ id: 'p1', channel_id: 'c1', created_at: 123 }]);
   });
 
   it('should update a post row by id', async () => {

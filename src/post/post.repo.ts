@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { Brackets, Repository } from 'typeorm';
 import { Post } from '../db/post.entity';
 
 @Injectable()
@@ -18,10 +18,20 @@ export class PostRepo {
     if (ids.length === 0) {
       return [];
     }
-    return this.repo.find({
-      select: { id: true, channel_id: true, created_at: true },
-      where: { id: In(ids) },
-    });
+
+    const threshold = Date.now() - 30 * 60 * 1000;
+    return this.repo
+      .createQueryBuilder('post')
+      .select(['post.id', 'post.channel_id', 'post.created_at'])
+      .andWhere('post.id IN (:...ids)', { ids })
+      .andWhere(
+        new Brackets((qb) => {
+          qb
+            .orWhere('post.fetched_at ISNULL')
+            .orWhere('post.fetched_at < :threshold', { threshold });
+        }),
+      )
+      .getMany();
   }
 
   async upsert(post: Partial<Post>): Promise<void> {
