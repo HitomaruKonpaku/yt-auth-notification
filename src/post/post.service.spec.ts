@@ -1,12 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PostService } from './post.service';
 import { PostRepo } from './post.repo';
+import { createHash } from 'crypto';
+import { ConfigService } from '../config/config.service';
+import { PostHistoryRepo } from './post-history.repo';
 import { YTProvider } from '../youtube/yt.provider';
 
 describe('PostService', () => {
   let service: PostService;
   let repo: { findToFetch: jest.Mock; update: jest.Mock };
   let ytProvider: { getYt: jest.Mock };
+  let configService: { getConfig: jest.Mock };
+  let historyRepo: { findLatest: jest.Mock; insert: jest.Mock };
 
   const makePost = (id: string, channel_id: string, created_at?: number) => ({
     id,
@@ -17,12 +22,16 @@ describe('PostService', () => {
   beforeEach(async () => {
     repo = { findToFetch: jest.fn().mockResolvedValue([]), update: jest.fn() };
     ytProvider = { getYt: jest.fn() };
+    configService = { getConfig: jest.fn().mockReturnValue({ postFetchMinAgeMs: 30 * 60 * 1000 }) };
+    historyRepo = { findLatest: jest.fn().mockResolvedValue(null), insert: jest.fn().mockResolvedValue(undefined) };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PostService,
         { provide: PostRepo, useValue: repo },
         { provide: YTProvider, useValue: ytProvider },
+        { provide: ConfigService, useValue: configService },
+        { provide: PostHistoryRepo, useValue: historyRepo },
       ],
     }).compile();
 
@@ -151,5 +160,62 @@ describe('PostService', () => {
     await service.pollPosts();
 
     expect(repo.findToFetch).not.toHaveBeenCalled();
+  });
+
+  it('should insert history row on first fetch', async () => {
+    service.registerOwner('post1', 'UC1');
+    repo.findToFetch.mockResolvedValue([makePost('post1', 'UCAuthor')]);
+    ytProvider.getYt.mockReturnValue({
+      getPost: jest.fn().mockResolvedValue({
+        posts: [{ type: 'BackstagePost', content: { text: 'Hello' }, attachment: null }],
+      }),
+    });
+
+    await service.pollPosts();
+
+    expect(historyRepo.insert).toHaveBeenCalledTimes(2);
+    expect(historyRepo.insert).toHaveBeenCalledWith(expect.objectContaining({
+      post_id: 'post1',
+      key: 'content',
+      value_hash: expect.any(String),
+      value: { text: 'Hello' },
+    }));
+    expect(historyRepo.insert).toHaveBeenCalledWith(expect.objectContaining({
+      post_id: 'post1',
+      key: 'attachment',
+      value_hash: undefined,
+      value: undefined,
+    }));
+  });
+
+  it('should skip history insert when content unchanged', async () => {
+    service.registerOwner('post1', 'UC1');
+    repo.findToFetch.mockResolvedValue([makePost('post1', 'UCAuthor')]);
+    ytProvider.getYt.mockReturnValue({
+      getPost: jest.fn().mockResolvedValue({
+        posts: [{ type: 'BackstagePost', content: { text: 'Same' }, attachment: null }],
+      }),
+    });
+    historyRepo.findLatest.mockImplementation((_postId: string, key: string) => {
+      if (key === 'content') {
+        return Promise.resolve({
+          id: 'hist1',
+          post_id: 'post1',
+          key: 'content',
+          value_hash: createHash('sha256').update(JSON.stringify({ text: 'Same' })).digest('hex'),
+          value: { text: 'Same' },
+        });
+      }
+      return Promise.resolve(null);
+    });
+
+    await service.pollPosts();
+
+    // Only attachment gets inserted (null, first time); content skipped
+    expect(historyRepo.insert).toHaveBeenCalledTimes(1);
+    expect(historyRepo.insert).toHaveBeenCalledWith(expect.objectContaining({
+      key: 'attachment',
+      value_hash: undefined,
+    }));
   });
 });

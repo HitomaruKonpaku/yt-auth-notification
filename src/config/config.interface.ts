@@ -17,6 +17,13 @@ export interface AppConfig {
   fetchPost?: boolean;
 
   /**
+   * Minimum age in milliseconds before a post is eligible for re-fetch.
+   * Only applies when fetchPost is enabled.
+   * @default 1800000 (30 minutes)
+   */
+  postFetchMinAgeMs?: number;
+
+  /**
    * Maximum exponential backoff cap in milliseconds.
    * @default 1800000 (30 minutes)
    */

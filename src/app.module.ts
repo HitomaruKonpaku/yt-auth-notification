@@ -7,6 +7,7 @@ import { ConfigModule } from './config/config.module';
 import { Channel } from './db/channel.entity';
 import { Notification } from './db/notification.entity';
 import { Post } from './db/post.entity';
+import { PostHistory } from './db/post-history.entity';
 import { DiscordModule } from './discord/discord.module';
 import { DisplayModule } from './display/display.module';
 import { HealthCheckModule } from './healthcheck/healthcheck.module';
@@ -26,6 +27,7 @@ import { YoutubeModule } from './youtube/youtube.module';
         Channel,
         Notification,
         Post,
+        PostHistory,
       ],
       synchronize: true,
     }),

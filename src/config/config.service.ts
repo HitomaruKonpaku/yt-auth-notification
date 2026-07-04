@@ -28,6 +28,7 @@ export class ConfigService {
     this.config = {
       interval: Number(data.interval) || 60,
       fetchPost: Boolean(data.fetchPost) || false,
+      postFetchMinAgeMs: Number(data.postFetchMinAgeMs) || 30 * 60 * 1000,
       maxBackoffMs: Number(data.maxBackoffMs) || 30 * 60 * 1000,
       sseKeepaliveMs: Number(data.sseKeepaliveMs) || 30000,
       accountInitRetries: Number(data.accountInitRetries) || 3,

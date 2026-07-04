@@ -8,5 +8,6 @@ module.exports = {
   testEnvironment: 'node',
   moduleNameMapper: {
     '^youtubei\\.js$': '<rootDir>/test-mocks/youtubei.js.mock.ts',
+    '^nanoid$': '<rootDir>/test-mocks/nanoid.mock.ts',
   },
 };

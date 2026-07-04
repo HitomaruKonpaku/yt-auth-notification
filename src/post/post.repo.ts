@@ -14,12 +14,12 @@ export class PostRepo {
     return this.repo.findOne({ where: { id } });
   }
 
-  async findToFetch(ids: string[]): Promise<Pick<Post, 'id' | 'channel_id' | 'created_at'>[]> {
+  async findToFetch(ids: string[], minAgeMs: number): Promise<Pick<Post, 'id' | 'channel_id' | 'created_at'>[]> {
     if (ids.length === 0) {
       return [];
     }
 
-    const threshold = Date.now() - 30 * 60 * 1000;
+    const threshold = Date.now() - minAgeMs;
     return this.repo
       .createQueryBuilder('post')
       .select(['post.id', 'post.channel_id', 'post.created_at'])

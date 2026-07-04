@@ -1,6 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { createHash } from 'crypto';
+import { IdUtil } from '../common/id.util';
+import { ConfigService } from '../config/config.service';
 import { Post } from '../db/post.entity';
 import { YTProvider } from '../youtube/yt.provider';
+import { PostHistoryRepo } from './post-history.repo';
 import { PostRepo } from './post.repo';
 import { isBackstagePost } from './post.util';
 
@@ -12,6 +16,8 @@ export class PostService {
   constructor(
     private readonly repo: PostRepo,
     private readonly ytProvider: YTProvider,
+    private readonly configService: ConfigService,
+    private readonly historyRepo: PostHistoryRepo,
   ) { }
 
   registerOwner(postId: string, ownerId: string): void {
@@ -24,7 +30,8 @@ export class PostService {
       return;
     }
 
-    const posts = await this.repo.findToFetch(ids);
+    const minAgeMs = this.configService.getConfig().postFetchMinAgeMs!;
+    const posts = await this.repo.findToFetch(ids, minAgeMs);
     for (const post of posts) {
       const ownerId = this.ownerMap.get(post.id);
       if (!ownerId) {
@@ -52,6 +59,8 @@ export class PostService {
           content: p.content,
           attachment: p.attachment,
         });
+        await this.trackHistory(post.id, 'content', p.content);
+        await this.trackHistory(post.id, 'attachment', p.attachment);
         this.logger.debug(`fetchPost: updated ${post.id}`);
       } else {
         if (p) {
@@ -71,5 +80,29 @@ export class PostService {
     }
 
     this.ownerMap.delete(post.id);
+  }
+
+  private async trackHistory(
+    postId: string,
+    key: string,
+    value: Record<string, any> | null | undefined,
+  ): Promise<void> {
+    const hash = value
+      ? createHash('sha256').update(JSON.stringify(value)).digest('hex')
+      : undefined;
+
+    const latest = await this.historyRepo.findLatest(postId, key);
+    if (latest && latest.value_hash === hash) {
+      return;
+    }
+
+    await this.historyRepo.insert({
+      id: IdUtil.generate(16),
+      created_at: Date.now(),
+      post_id: postId,
+      key,
+      value_hash: hash,
+      value: value ?? undefined,
+    });
   }
 }

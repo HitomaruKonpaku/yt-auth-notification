@@ -50,15 +50,15 @@ describe('PostRepo', () => {
   });
 
   it('should return empty array for empty ids', async () => {
-    const result = await repo.findToFetch([]);
+    const result = await repo.findToFetch([], 30 * 60 * 1000);
     expect(result).toEqual([]);
     expect(mockRepo.createQueryBuilder).not.toHaveBeenCalled();
   });
 
-  it('should filter by fetched_at staleness (30 min)', async () => {
+  it('should filter by fetched_at staleness', async () => {
     mockQb.getMany.mockResolvedValue([{ id: 'p1', channel_id: 'c1', created_at: 123 }]);
 
-    const result = await repo.findToFetch(['p1', 'p2']);
+    const result = await repo.findToFetch(['p1', 'p2'], 30 * 60 * 1000);
 
     expect(mockRepo.createQueryBuilder).toHaveBeenCalledWith('post');
     expect(mockQb.select).toHaveBeenCalledWith(['post.id', 'post.channel_id', 'post.created_at']);
