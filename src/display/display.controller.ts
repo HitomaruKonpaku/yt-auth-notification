@@ -1,8 +1,10 @@
 import { Controller, Get, Res } from '@nestjs/common';
+import { ApiExcludeController } from '@nestjs/swagger';
 import { Response } from 'express';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
+@ApiExcludeController()
 @Controller()
 export class DisplayController {
   private indexHtml: string;
