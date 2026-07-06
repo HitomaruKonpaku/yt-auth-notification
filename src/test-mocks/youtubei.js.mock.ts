@@ -10,3 +10,10 @@ export default class Innertube {
     return { contents: [] };
   }
 }
+
+export const Log = {
+  Level: { NONE: 0, ERROR: 1, WARNING: 2, INFO: 3, DEBUG: 4 },
+  setLevel(_level: number) { },
+};
+
+export const YTNodes = {};
