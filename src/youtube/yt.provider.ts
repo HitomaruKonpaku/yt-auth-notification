@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Innertube, Types } from 'youtubei.js';
+import { Innertube, Log, Types } from 'youtubei.js';
 import { CookieService } from './cookie.service';
+
+// Available levels: NONE, ERROR, WARNING, INFO, DEBUG
+Log.setLevel(Log.Level.NONE);
 
 @Injectable()
 export class YTProvider {

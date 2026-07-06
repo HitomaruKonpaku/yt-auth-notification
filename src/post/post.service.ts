@@ -124,7 +124,10 @@ export class PostService {
   }
 
   async fetchCommunityPosts(channelId: string, ownerId?: string): Promise<{ total: number; inserted: number; updated: number }> {
+    this.logger.debug(`fetchCommunityPosts: start for ${channelId}`);
+
     if (this.fetchingChannels.has(channelId)) {
+      this.logger.debug(`fetchCommunityPosts: ${channelId} already being fetched`);
       throw new ConflictException(`Channel ${channelId} is already being fetched`);
     }
 
@@ -132,13 +135,17 @@ export class PostService {
 
     try {
       const owner = this.resolveOwner(ownerId);
+      this.logger.debug(`fetchCommunityPosts: using owner ${owner}`);
       const yt = this.ytProvider.getYt(owner);
       if (!yt) {
+        this.logger.debug(`fetchCommunityPosts: no Innertube session for ${owner}`);
         throw new BadRequestException(`No Innertube session for ${owner}`);
       }
 
       const ytPosts = await this.fetchAllPosts(yt, channelId);
+      this.logger.debug(`fetchCommunityPosts: fetched ${ytPosts.length} posts`);
       if (ytPosts.length === 0) {
+        this.logger.debug(`fetchCommunityPosts: ${channelId} empty feed`);
         return { total: 0, inserted: 0, updated: 0 };
       }
 
@@ -147,6 +154,7 @@ export class PostService {
       this.computeTimestamps(ytPosts);
 
       const merged = await this.mergeOrphans(ytPosts, channelId);
+      this.logger.debug(`fetchCommunityPosts: merged ${merged.length} posts (${merged.filter(m => m.source === 'orphan').length} orphans)`);
 
       this.assignTimestamps(merged);
 
@@ -156,9 +164,11 @@ export class PostService {
 
       const { inserted, updated } = await this.upsertPosts(merged, existingMap, finishedAt);
 
+      this.logger.log(`fetchCommunityPosts: ${channelId} total=${ytPosts.length} inserted=${inserted} updated=${updated}`);
       return { total: ytPosts.length, inserted, updated };
     } finally {
       this.fetchingChannels.delete(channelId);
+      this.logger.debug(`fetchCommunityPosts: released lock for ${channelId}`);
     }
   }
 
@@ -182,14 +192,17 @@ export class PostService {
 
     let feed: any = null;
     const allPosts: (YTNodes.BackstagePost | YTNodes.SharedPost)[] = [];
+    let page = 0;
 
     do {
       try {
+        page++;
         feed = feed
           ? await feed.getContinuation()
           : await channel.getTabByURL('posts');
+        this.logger.debug(`fetchAllPosts: ${channelId} page ${page} = ${feed.posts.length} posts`);
       } catch (err) {
-        this.logger.warn(`fetchAllPosts: pagination error for ${channelId}`, err);
+        this.logger.warn(`fetchAllPosts: pagination error at page ${page} for ${channelId}`, err);
         break;
       }
 
@@ -201,6 +214,8 @@ export class PostService {
         allPosts.push(post);
       }
     } while (feed.has_continuation);
+
+    this.logger.debug(`fetchAllPosts: ${channelId} done — ${allPosts.length} total from ${page} page(s)`);
 
     return allPosts;
   }
