@@ -19,6 +19,11 @@ jobs:
           node-version: 22
 
       - run: npm ci
+
+      - name: Create test config
+        run: |
+          echo 'interval: 60' > config.yaml
+
       - run: npm test
 
   docker:
