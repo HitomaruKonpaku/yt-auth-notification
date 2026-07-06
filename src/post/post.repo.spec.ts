@@ -15,6 +15,7 @@ describe('PostRepo', () => {
       where: jest.fn().mockReturnThis(),
       andWhere: jest.fn().mockReturnThis(),
       orWhere: jest.fn().mockReturnThis(),
+      addOrderBy: jest.fn().mockReturnThis(),
       getMany: jest.fn().mockResolvedValue([]),
     };
     mockRepo = {
@@ -74,5 +75,53 @@ describe('PostRepo', () => {
       { id: 'p1' },
       { fetched_at: 123456, updated_at: 123456 },
     );
+  });
+
+  describe('findByIds', () => {
+    it('should return empty array for empty ids', async () => {
+      const result = await repo.findByIds([]);
+      expect(result).toEqual([]);
+    });
+
+    it('should query posts by ids', async () => {
+      mockQb.getMany.mockResolvedValue([
+        { id: 'p1', channel_id: 'c1', created_at: 100, published_at: 200, initiator: 'notification' },
+      ]);
+
+      const result = await repo.findByIds(['p1', 'p2']);
+
+      expect(mockRepo.createQueryBuilder).toHaveBeenCalledWith('post');
+      expect(mockQb.select).toHaveBeenCalledWith([
+        'post.id',
+        'post.channel_id',
+        'post.created_at',
+        'post.published_at',
+        'post.initiator',
+      ]);
+      expect(mockQb.andWhere).toHaveBeenCalledWith('post.id IN (:...ids)', { ids: ['p1', 'p2'] });
+      expect(result).toEqual([
+        { id: 'p1', channel_id: 'c1', created_at: 100, published_at: 200, initiator: 'notification' },
+      ]);
+    });
+  });
+
+  describe('findAllByChannel', () => {
+    it('should query posts by channel ordered by published_at DESC', async () => {
+      mockQb.getMany.mockResolvedValue([
+        { id: 'p2', channel_id: 'UC1', published_at: 300 },
+        { id: 'p1', channel_id: 'UC1', published_at: 100 },
+      ]);
+
+      const result = await repo.findAllByChannel('UC1');
+
+      expect(mockRepo.createQueryBuilder).toHaveBeenCalledWith('post');
+      expect(mockQb.select).toHaveBeenCalledWith(['post.id', 'post.channel_id', 'post.published_at']);
+      expect(mockQb.andWhere).toHaveBeenCalledWith('post.channel_id = :channelId', { channelId: 'UC1' });
+      expect(mockQb.addOrderBy).toHaveBeenCalledWith('post.published_at', 'DESC');
+      expect(result).toEqual([
+        { id: 'p2', channel_id: 'UC1', published_at: 300 },
+        { id: 'p1', channel_id: 'UC1', published_at: 100 },
+      ]);
+    });
   });
 });

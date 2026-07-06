@@ -15,6 +15,11 @@ export class PollingService {
   private isFirstPoll = true;
   private timer: NodeJS.Timeout | null = null;
 
+  private readonly _debug = {
+    canStartPolling: true,
+    canGetNotifications: true,
+  };
+
   constructor(
     private readonly configService: ConfigService,
     private readonly ytProvider: YTProvider,
@@ -25,6 +30,10 @@ export class PollingService {
   ) { }
 
   startPolling() {
+    if (!this._debug.canStartPolling) {
+      return;
+    }
+
     this.logger.log('Starting polling loop');
     this.poll();
   }
@@ -62,6 +71,9 @@ export class PollingService {
       }
 
       const yt = await this.ytProvider.initYt(channelId, account.pageId);
+      if (!this._debug.canGetNotifications) {
+        return;
+      }
 
       this.logger.debug(`[${channelId}] yt.getNotifications()`);
       const menu: YT.NotificationsMenu = await yt.getNotifications();

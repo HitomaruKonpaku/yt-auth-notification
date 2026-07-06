@@ -41,4 +41,27 @@ export class PostRepo {
   async update(id: string, partial: Partial<Post>): Promise<void> {
     await this.repo.update({ id }, partial);
   }
+
+  async findByIds(ids: string[]): Promise<Pick<Post, 'id' | 'channel_id' | 'created_at' | 'published_at' | 'initiator'>[]> {
+    if (ids.length === 0) {
+      return [];
+    }
+
+    const qb = this.repo
+      .createQueryBuilder('post')
+      .select(['post.id', 'post.channel_id', 'post.created_at', 'post.published_at', 'post.initiator'])
+      .andWhere('post.id IN (:...ids)', { ids });
+
+    return qb.getMany();
+  }
+
+  async findAllByChannel(channelId: string): Promise<Pick<Post, 'id' | 'channel_id' | 'published_at'>[]> {
+    const qb = this.repo
+      .createQueryBuilder('post')
+      .select(['post.id', 'post.channel_id', 'post.published_at'])
+      .andWhere('post.channel_id = :channelId', { channelId })
+      .addOrderBy('post.published_at', 'DESC');
+
+    return qb.getMany();
+  }
 }

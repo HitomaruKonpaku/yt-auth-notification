@@ -107,13 +107,18 @@ export class AccountService {
         const channelId = resolved.payload.browseId as string;
         this.logger.debug(`  -> ${JSON.stringify({ handle, channelId })}`);
 
-        await this.channelService.upsert({ id: channelId, handle, name: channel.account_name?.toString() ?? '', thumbnail_url: channel.account_photo?.[0]?.url ?? undefined });
+        await this.channelService.upsert({
+          id: channelId,
+          handle,
+          name: channel.account_name?.toString(),
+          thumbnail_url: channel.account_photo?.[0]?.url,
+        });
 
         this.accountsMap.set(channelId, {
           id: channelId,
           handle,
           name: channel.account_name?.toString() ?? '',
-          thumbnail_url: channel.account_photo?.[0]?.url ?? undefined,
+          thumbnail_url: channel.account_photo?.[0]?.url,
           is_selected: channel.is_selected,
           is_disabled: channel.is_disabled,
           pageId: extractPageId(channel),

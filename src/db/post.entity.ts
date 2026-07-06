@@ -21,6 +21,12 @@ export class Post {
   @Column('integer', { nullable: true })
   published_at?: number;
 
+  @Column('text', { nullable: true })
+  initiator?: string;
+
+  @Column('text', { nullable: true })
+  type?: string;
+
   @Column('text', { nullable: true, transformer: jsonTransformer })
   content?: Record<string, any>;
 

@@ -3,11 +3,11 @@ import { ParseNumberPipe } from '../common/parse-number.pipe';
 import { NotificationService } from './notification.service';
 import { enrichNotification } from './notification.util';
 
-@Controller('api')
+@Controller('api/notifications')
 export class NotificationController {
   constructor(private readonly notificationService: NotificationService) { }
 
-  @Get('notifications')
+  @Get()
   async getNotifications(
     @Query('limit', new ParseNumberPipe(50)) limit: number,
     @Query('offset', new ParseNumberPipe(0)) offset: number,
@@ -20,7 +20,7 @@ export class NotificationController {
     };
   }
 
-  @Get('notifications/latest')
+  @Get('latest')
   async getLatest() {
     const result = await this.notificationService.getNotifications(1, 0);
     const item = result.items[0] || null;
