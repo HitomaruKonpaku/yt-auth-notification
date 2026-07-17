@@ -1,18 +1,10 @@
 const AUTHOR_VERB_DELIMITERS = [
-  ' is live:',
-  ' is live',
   ' uploaded:',
-  ' uploaded',
-  ' liked your comment:',
-  ' liked your comment',
-  ' replied:',
-  ' replied',
+  ' premiering in',
   ' premiering now:',
-  ' premiering now',
-  ' premiering:',
-  ' premiering',
-  ' posted:',
-  ' posted',
+  ' is live:',
+  ' replied:',
+  ' liked your comment:',
   ' pinned your comment',
 ];
 
@@ -38,6 +30,18 @@ export function parseAuthorName(text: string): string {
     const afterWatch = cleaned.slice(6);
     const liveIdx = afterWatch.indexOf(' live in');
     return afterWatch.slice(0, liveIdx).trim();
+  }
+
+  // "You got a gift membership: Enjoy 1-month access to <name> perks starting now"
+  if (cleaned.startsWith('You got a gift membership:')) {
+    const accessIdx = cleaned.indexOf(' access to ');
+    if (accessIdx !== -1) {
+      const afterAccess = cleaned.slice(accessIdx + 11);
+      const perksIdx = afterAccess.indexOf(' perks');
+      if (perksIdx !== -1) {
+        return afterAccess.slice(0, perksIdx).trim();
+      }
+    }
   }
 
   const fromAtIdx = cleaned.indexOf(FROM_AT_PREFIX);
