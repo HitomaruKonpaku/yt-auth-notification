@@ -2,6 +2,7 @@ import { createContext, useContext, useState, type ReactNode } from 'react';
 
 interface Config {
   limit: number;
+  useSound: boolean;
   useAbsoluteTime: boolean;
   showOwnerProfile: boolean;
 }
@@ -9,6 +10,8 @@ interface Config {
 interface ConfigContextValue {
   limit: number;
   setLimit: (n: number) => void;
+  useSound: boolean;
+  toggleSound: () => void;
   useAbsoluteTime: boolean;
   toggleAbsoluteTime: () => void;
   showOwnerProfile: boolean;
@@ -20,6 +23,8 @@ const DEFAULT_LIMIT = 10;
 const ConfigContext = createContext<ConfigContextValue>({
   limit: DEFAULT_LIMIT,
   setLimit: () => { },
+  useSound: true,
+  toggleSound: () => { },
   useAbsoluteTime: false,
   toggleAbsoluteTime: () => { },
   showOwnerProfile: false,
@@ -31,12 +36,14 @@ export function readConfig(): Config {
     const stored = JSON.parse(localStorage.getItem('config') ?? '{}');
     return {
       limit: Number(stored.limit) || DEFAULT_LIMIT,
+      useSound: stored.useSound !== false,
       useAbsoluteTime: stored.useAbsoluteTime === true,
       showOwnerProfile: stored.showOwnerProfile === true,
     };
   } catch {
     return {
       limit: DEFAULT_LIMIT,
+      useSound: true,
       useAbsoluteTime: false,
       showOwnerProfile: false,
     };
@@ -55,6 +62,14 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
     setConfig((prev) => {
       const next = { ...prev, limit: n };
       writeConfig({ limit: n });
+      return next;
+    });
+  };
+
+  const toggleSound = () => {
+    setConfig((prev) => {
+      const next = { ...prev, useSound: !prev.useSound };
+      writeConfig({ useSound: next.useSound });
       return next;
     });
   };
@@ -79,6 +94,8 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
     <ConfigContext.Provider value={{
       limit: config.limit,
       setLimit,
+      useSound: config.useSound,
+      toggleSound,
       useAbsoluteTime: config.useAbsoluteTime,
       toggleAbsoluteTime,
       showOwnerProfile: config.showOwnerProfile,

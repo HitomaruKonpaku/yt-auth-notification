@@ -43,7 +43,7 @@ function writeUrl(channelId: string | null, limit: number, offset: number) {
 export default function App() {
   const { loading, setLoading } = useLoading();
   const { notificationPermission, setNotificationPermission } = usePermission();
-  const { limit, setLimit } = useConfig();
+  const { limit, setLimit, useSound } = useConfig();
   const [offset, setOffset] = useState(0);
   const [total, setTotal] = useState(0);
   const {
@@ -151,6 +151,14 @@ export default function App() {
 
       addNewNotificationId(item.id);
 
+      if (useSound) {
+        const audio = new Audio('/se_chat_announce.ogg');
+        audio.onerror = () => console.error('Audio failed to load or decode');
+        audio.play().catch((err) => {
+          console.error('Audio playback failed:', err);
+        });
+      }
+
       if (notificationPermissionRef.current === 'granted') {
         const notif = new Notification(item.short_message.text, {
           icon: item.thumbnail_url || undefined,
@@ -163,16 +171,12 @@ export default function App() {
           writeUrl(channelRef.current, limit, 0);
           loadNotifications(channelRef.current, limit, 0);
         };
-        const audio = new Audio('/se_chat_announce.ogg');
-        audio.onerror = () => console.error('Audio failed to load or decode');
-        audio.play().catch((err) => {
-          console.error('Audio playback failed:', err);
-        });
       }
 
       if (offsetRef.current === 0) {
         setNotifications((prev) => [item, ...prev]);
       }
+
       setTotal((prev) => prev + 1);
     };
 

@@ -4,6 +4,7 @@ import { useConfig } from '../context/ConfigContext';
 export default function SettingsContent() {
   const {
     limit, setLimit,
+    useSound, toggleSound,
     useAbsoluteTime, toggleAbsoluteTime,
     showOwnerProfile, toggleOwnerProfile,
   } = useConfig();
@@ -22,6 +23,15 @@ export default function SettingsContent() {
           allowDeselect={false}
           withAlignedLabels
           onChange={(v) => setLimit(Number(v))}
+        />
+      </Group>
+
+      <Group wrap="nowrap" justify="space-between">
+        <Text size="sm">Sound</Text>
+        <Switch
+          checked={useSound}
+          size={size}
+          onChange={toggleSound}
         />
       </Group>
 
