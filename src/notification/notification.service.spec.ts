@@ -191,4 +191,124 @@ describe('NotificationService', () => {
     await service.processNotifications(raw as any, 'UC123');
     expect(sseService.push).not.toHaveBeenCalled();
   });
+
+  describe('processRawNotifications', () => {
+    const rawVideo = () => ({
+      notification_id: '1700000000',
+      short_message: { text: 'Channel A uploaded: Video', rtl: false },
+      thumbnails: [{ url: 'https://avatar/a.jpg' }],
+      endpoint: {
+        metadata: { url: '/watch?v=VID1' },
+        payload: { videoId: 'VID1' },
+      },
+    });
+
+    const rawPost = () => ({
+      notification_id: '1700000001',
+      short_message: { text: 'Channel A posted: Hello', rtl: false },
+      thumbnails: [{ url: 'https://avatar/b.jpg' }],
+      endpoint: {
+        metadata: { url: '/post/Ugkx' },
+        payload: { browseId: 'FEpost_detail', params: FE_POST_PARAMS },
+      },
+    });
+
+    it('should map raw fields into a notification row', async () => {
+      repo.upsertAll.mockResolvedValue(['1700000000']);
+      const result = await service.processRawNotifications([rawVideo()], 'UC123');
+
+      expect(repo.upsertAll.mock.calls[0][0][0]).toEqual({
+        id: '1700000000',
+        created_at: expect.any(Number),
+        sent_at: 1700000,
+        owner_id: 'UC123',
+        video_id: 'VID1',
+        linked_comment_id: undefined,
+        endpoint_url: '/watch?v=VID1',
+        message: 'Channel A uploaded: Video',
+        thumbnail_url: 'https://avatar/a.jpg',
+      });
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('1700000000');
+    });
+
+    it('should handle missing optional fields', async () => {
+      repo.upsertAll.mockResolvedValue(['1700000002']);
+      await service.processRawNotifications([{ notification_id: '1700000002' }], 'UC123');
+
+      const row = repo.upsertAll.mock.calls[0][0][0];
+      expect(row.message).toBe('');
+      expect(row.video_id).toBeUndefined();
+      expect(row.thumbnail_url).toBeUndefined();
+    });
+
+    it('should parse FEpost_detail params and upsert the post', async () => {
+      repo.upsertAll.mockResolvedValue(['1700000001']);
+      const result = await service.processRawNotifications([rawPost()], 'UC123');
+
+      expect(result[0].post_id).toBe('Ugkx5Xl24OdffGL5l2UeHOWgX_Gt-dSYBiHv');
+      expect(postRepo.upsert).toHaveBeenCalledWith({
+        id: 'Ugkx5Xl24OdffGL5l2UeHOWgX_Gt-dSYBiHv',
+        channel_id: 'UCIjdfjcSaEgdjwbgjxC3ZWg',
+        created_at: expect.any(Number),
+      });
+    });
+
+    it('should register owner when fetchPost is enabled', async () => {
+      const configWithFetch = { getConfig: jest.fn().mockReturnValue({ fetchPost: true }) };
+      const localModule = await Test.createTestingModule({
+        providers: [
+          NotificationService,
+          { provide: NotificationRepo, useValue: { upsertAll: jest.fn().mockResolvedValue(['1700000001']), findAll: jest.fn() } },
+          { provide: PostRepo, useValue: { upsert: jest.fn() } },
+          { provide: PostService, useValue: { registerOwner: jest.fn() } },
+          { provide: SseService, useValue: { push: jest.fn(), subject: { next: jest.fn() } } },
+          { provide: ConfigService, useValue: configWithFetch },
+        ],
+      }).compile();
+      const localService = localModule.get<NotificationService>(NotificationService);
+      const localPostService = localModule.get<{ registerOwner: jest.Mock }>(PostService as any);
+
+      await localService.processRawNotifications([rawPost()], 'UC123');
+
+      expect(localPostService.registerOwner).toHaveBeenCalledWith(
+        'Ugkx5Xl24OdffGL5l2UeHOWgX_Gt-dSYBiHv',
+        'UC123',
+      );
+    });
+
+    it('should push new items to SSE', async () => {
+      repo.upsertAll.mockResolvedValue(['1700000000']);
+      await service.processRawNotifications([rawVideo()], 'UC123');
+
+      expect(sseService.push).toHaveBeenCalledTimes(1);
+      expect(sseService.push).toHaveBeenCalledWith('notification.new', expect.objectContaining({
+        item: expect.objectContaining({
+          id: '1700000000',
+          _url: expect.any(String),
+        }),
+      }));
+    });
+
+    it('should not push when there are no new items', async () => {
+      repo.upsertAll.mockResolvedValue([]);
+      await service.processRawNotifications([rawVideo()], 'UC123');
+
+      expect(sseService.push).not.toHaveBeenCalled();
+    });
+
+    it('should skip items without an id', async () => {
+      repo.upsertAll.mockResolvedValue(['1700000000']);
+      const raw = [
+        { notification_id: undefined as unknown as string, short_message: { text: 'No id' } },
+        rawVideo(),
+      ];
+
+      const result = await service.processRawNotifications(raw, 'UC123');
+
+      expect(repo.upsertAll.mock.calls[0][0]).toHaveLength(1);
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('1700000000');
+    });
+  });
 });

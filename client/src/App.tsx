@@ -160,9 +160,9 @@ export default function App() {
       }
 
       if (notificationPermissionRef.current === 'granted') {
-        const notif = new Notification(item.short_message.text, {
+        const notif = new Notification(item.message, {
           icon: item.thumbnail_url || undefined,
-          body: item.short_message.text,
+          body: item.message,
         });
         notif.onclick = () => {
           window.focus();

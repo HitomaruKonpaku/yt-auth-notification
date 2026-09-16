@@ -51,7 +51,7 @@ export default function NotificationItem({ item }: Props) {
         <Avatar src={item.thumbnail_url} radius="md" size="lg" />
       </Indicator>
       <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
-        <Text size="sm" ta="justify">{item.short_message.text}</Text>
+        <Text size="sm" ta="justify">{item.message}</Text>
         <Group gap={6}>
           <IconClock size={16} />
           <Text size="xs" ff="monospace">{timeDisplay}</Text>

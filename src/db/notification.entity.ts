@@ -1,6 +1,4 @@
 import { Column, Entity, PrimaryColumn } from 'typeorm';
-import type { ShortMessage } from '../notification/notification.interface';
-import { jsonTransformer } from '../common/json-transformer';
 
 @Entity('notification')
 export class Notification {
@@ -31,8 +29,8 @@ export class Notification {
   @Column('text', { nullable: true })
   endpoint_url?: string;
 
-  @Column('text', { transformer: jsonTransformer })
-  short_message: ShortMessage;
+  @Column('text')
+  message: string;
 
   @Column('text', { nullable: true })
   thumbnail_url?: string;

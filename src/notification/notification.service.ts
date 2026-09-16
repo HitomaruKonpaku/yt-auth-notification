@@ -2,10 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { YTNodes } from 'youtubei.js';
 import { decodePostParams } from '../common/params-parser';
 import { ConfigService } from '../config/config.service';
-import { PostService } from '../post/post.service';
 import { PostRepo } from '../post/post.repo';
+import { PostService } from '../post/post.service';
 import { SseService } from '../sse/sse.service';
-import type { NotificationLike } from './notification.interface';
+import type { NotificationLike, RawNotification } from './notification.interface';
 import { NotificationRepo } from './notification.repo';
 import { enrichNotification } from './notification.util';
 
@@ -26,31 +26,50 @@ export class NotificationService {
   }
 
   async processNotifications(raw: YTNodes.Notification[], ownerId?: string) {
+    return this.processItems(raw, ownerId);
+  }
+
+  async processRawNotifications(raw: RawNotification[], ownerId?: string) {
+    return this.processItems(raw, ownerId);
+  }
+
+  private async processItems(raw: RawNotification[], ownerId?: string) {
     const rows: NotificationLike[] = [];
     for (const n of raw) {
-      const row: NotificationLike = {
-        id: n.notification_id,
-        created_at: Date.now(),
-        sent_at: Math.trunc(Number(n.notification_id) / 1000),
-        owner_id: ownerId,
-        video_id: n.endpoint.payload?.videoId,
-        post_id: undefined,
-        linked_comment_id: n.endpoint.payload?.linkedCommentId,
-        endpoint_url: n.endpoint.metadata.url,
-        short_message: { text: n.short_message.text ?? '', rtl: n.short_message.rtl },
-        thumbnail_url: n.thumbnails[0]?.url,
-      };
+      if (!n.notification_id) {
+        this.logger.warn('processItems: skipping notification without an id');
+        continue;
+      }
 
+      const row = this.buildRow(n, ownerId);
       await this.tryParsePost(n, row, ownerId);
-
       rows.push(row);
     }
 
+    return this.persistRows(rows);
+  }
+
+  private buildRow(n: RawNotification, ownerId?: string): NotificationLike {
+    return {
+      id: n.notification_id,
+      created_at: Date.now(),
+      sent_at: Math.trunc(Number(n.notification_id) / 1000),
+      owner_id: ownerId,
+      video_id: n.endpoint?.payload?.videoId,
+      post_id: undefined,
+      linked_comment_id: n.endpoint?.payload?.linkedCommentId,
+      endpoint_url: n.endpoint?.metadata?.url,
+      message: n.short_message?.text ?? '',
+      thumbnail_url: n.thumbnails?.[0]?.url,
+    };
+  }
+
+  private async persistRows(rows: NotificationLike[]) {
     const insertedIds = await this.repo.upsertAll(rows as Parameters<NotificationRepo['upsertAll']>[0]);
     const newItems = rows.filter(r => insertedIds.includes(r.id));
 
     if (newItems.length > 0) {
-      this.logger.log(`processNotifications: inserted ${newItems.length} new`);
+      this.logger.log(`inserted ${newItems.length} new notification(s)`);
     }
 
     for (const item of newItems) {
@@ -62,8 +81,8 @@ export class NotificationService {
     return newItems;
   }
 
-  private async tryParsePost(n: YTNodes.Notification, row: NotificationLike, ownerId?: string) {
-    if (n.endpoint.payload?.browseId !== 'FEpost_detail' || !n.endpoint.payload?.params) {
+  private async tryParsePost(n: RawNotification, row: NotificationLike, ownerId?: string) {
+    if (n.endpoint?.payload?.browseId !== 'FEpost_detail' || !n.endpoint?.payload?.params) {
       return;
     }
 

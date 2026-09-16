@@ -1,13 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-export class ShortMessageDto {
-  @ApiProperty({ description: 'Notification short message text', example: 'New video from...' })
-  text: string;
-
-  @ApiProperty({ description: 'Whether the text is right-to-left', example: false })
-  rtl: boolean;
-}
-
 export class NotificationDto {
   @ApiProperty({ description: 'Notification ID', example: 'Ugk...' })
   id: string;
@@ -33,8 +25,8 @@ export class NotificationDto {
   @ApiPropertyOptional({ description: 'YouTube endpoint URL' })
   endpoint_url?: string;
 
-  @ApiProperty({ description: 'Short message content', type: ShortMessageDto })
-  short_message: ShortMessageDto;
+  @ApiProperty({ description: 'Notification message', example: 'Channel A uploaded: Video' })
+  message: string;
 
   @ApiPropertyOptional({ description: 'Thumbnail URL' })
   thumbnail_url?: string;

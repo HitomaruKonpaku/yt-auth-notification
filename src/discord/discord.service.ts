@@ -45,8 +45,7 @@ export class DiscordService {
   }
 
   private async buildEmbed(notif: NotificationLike) {
-    const shortMsg = notif.short_message;
-    const text: string = shortMsg.text || '';
+    const text: string = notif.message || '';
     const authorName = parseAuthorName(text);
 
     const embed: Record<string, any> = {
@@ -58,7 +57,7 @@ export class DiscordService {
       embed.author.icon_url = notif.thumbnail_url;
     }
 
-    embed.description = notif.short_message.text;
+    embed.description = notif.message;
     const url = buildYtEndpointUrl(notif);
     if (url) {
       embed.description += `\n${url}`;

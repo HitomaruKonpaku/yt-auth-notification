@@ -25,7 +25,7 @@ NestJS 11 app with twelve modules. All modules are `@Global()` — no need to im
 
 **Modules (all `@Global()`):** `ConfigModule` (YAML config), `YoutubeModule` (Innertube session + cookie watcher), `NotificationModule` (poll processing, repo), `DiscordModule` (webhook relay), `DisplayModule` (HBS web dashboard + JSON API), `AccountModule` (multi-channel session management), `ChannelModule` (channel CRUD), `PostModule` (community post polling), `SseModule` (Server-Sent Events), `HealthCheckModule` (session validity), `PollingModule` (orchestration loop).
 
-**Entities:** `Notification`, `Channel`, `Post` — TypeORM with `better-sqlite3`. `synchronize: true` for schema; `db/migrate.ts` runs manual migrations (e.g. column renames) before Nest boots. `Notification.short_message` uses `jsonTransformer` for transparent JSON-encode/decode of `{ text, rtl }`.
+**Entities:** `Notification`, `Channel`, `Post` — TypeORM with `better-sqlite3`. `synchronize: true` for schema; `db/migrate.ts` runs manual migrations (e.g. column renames) before Nest boots. `Notification.message` is a plain text column. The parser boundary keeps YouTube's raw `short_message`; `buildRow` maps it to `message`.
 
 **Data flow:** `main.ts` boots → runs `runMigrations()` → `app.listen()` → `PollingService.startPolling()` schedules first poll → each poll: `AccountService.initialize()` resolves channels from Innertube session → per-account `pollChannel()` calls `yt.getNotifications()` (+ optional continuation on first poll) → `NotificationService.processNotifications()` dedupes by ID, inserts → new items go to `DiscordService` (webhook embeds) and `SseService` (real-time push to React client).
 

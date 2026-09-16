@@ -45,7 +45,7 @@ describe('DiscordService', () => {
 
     await service.relayNotification({
       id: '1781444560063061',
-      short_message: { text: 'Test msg', rtl: false },
+      message: 'Test msg',
       thumbnail_url: 'https://img.jpg',
       sent_at: 1781444560063,
       video_id: 'vid123',
@@ -64,7 +64,7 @@ describe('DiscordService', () => {
   it('should use comment URL when linked_comment_id present', async () => {
     mockAxios.post.mockResolvedValue({} as any);
     await service.relayNotification({
-      id: '1', short_message: { text: 'x', rtl: false }, thumbnail_url: null,
+      id: '1', message: 'x', thumbnail_url: null,
       sent_at: 1, video_id: 'vid', linked_comment_id: 'lc456', endpoint_url: '/watch?v=vid',
     } as any);
 
@@ -75,7 +75,7 @@ describe('DiscordService', () => {
   it('should skip webhooks that fail and continue', async () => {
     mockAxios.post.mockRejectedValueOnce(new Error('fail')).mockResolvedValueOnce({} as any);
     await service.relayNotification({
-      id: '1', short_message: { text: '', rtl: false }, thumbnail_url: null, sent_at: 1,
+      id: '1', message: '', thumbnail_url: null, sent_at: 1,
       video_id: null, linked_comment_id: null, endpoint_url: null,
     } as any);
     expect(mockAxios.post).toHaveBeenCalledTimes(2);
@@ -85,7 +85,7 @@ describe('DiscordService', () => {
     configService.getConfig.mockReturnValue({ webhooks: { discord: [{ url: 'https://x.com', msg: '' }] } });
     mockAxios.post.mockResolvedValue({} as any);
     await service.relayNotification({
-      id: '1', short_message: { text: '', rtl: false }, thumbnail_url: null, sent_at: 1,
+      id: '1', message: '', thumbnail_url: null, sent_at: 1,
       video_id: null, linked_comment_id: null, endpoint_url: null,
     } as any);
     const body = mockAxios.post.mock.calls[0][1] as any;
@@ -95,7 +95,7 @@ describe('DiscordService', () => {
   it('should omit thumbnail when no video_id', async () => {
     mockAxios.post.mockResolvedValue({} as any);
     await service.relayNotification({
-      id: '1', short_message: { text: '', rtl: false }, thumbnail_url: null, sent_at: 1,
+      id: '1', message: '', thumbnail_url: null, sent_at: 1,
       video_id: null, linked_comment_id: null, endpoint_url: null,
     } as any);
     const body = mockAxios.post.mock.calls[0][1] as any;
@@ -114,7 +114,7 @@ describe('DiscordService', () => {
 
     await service.relayNotification({
       id: '1',
-      short_message: { text: 'live msg', rtl: false },
+      message: 'live msg',
       thumbnail_url: null,
       sent_at: 1,
       video_id: null,
@@ -142,7 +142,7 @@ describe('DiscordService', () => {
 
     await service.relayNotification({
       id: '1',
-      short_message: { text: 'live msg', rtl: false },
+      message: 'live msg',
       thumbnail_url: null,
       sent_at: 1,
       video_id: null,
@@ -168,7 +168,7 @@ describe('DiscordService', () => {
 
     await service.relayNotification({
       id: '1',
-      short_message: { text: 'live msg', rtl: false },
+      message: 'live msg',
       thumbnail_url: null,
       sent_at: 1,
       video_id: null,
@@ -186,7 +186,7 @@ describe('DiscordService', () => {
 
     await service.relayNotification({
       id: '1',
-      short_message: { text: 'msg', rtl: false },
+      message: 'msg',
       thumbnail_url: null,
       sent_at: 1,
       video_id: null,
@@ -205,7 +205,7 @@ describe('DiscordService', () => {
 
     await service.relayNotification({
       id: '1',
-      short_message: { text: 'msg', rtl: false },
+      message: 'msg',
       thumbnail_url: null,
       sent_at: 1,
       video_id: null,
@@ -227,7 +227,7 @@ describe('DiscordService', () => {
     // should not throw
     await service.relayNotification({
       id: '1',
-      short_message: { text: 'msg', rtl: false },
+      message: 'msg',
       thumbnail_url: null,
       sent_at: 1,
       video_id: null,
@@ -248,7 +248,7 @@ describe('DiscordService', () => {
     // should not throw
     await service.relayNotification({
       id: '1',
-      short_message: { text: 'msg', rtl: false },
+      message: 'msg',
       thumbnail_url: null,
       sent_at: 1,
       video_id: null,

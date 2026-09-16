@@ -18,7 +18,7 @@ describe('NotificationController', () => {
   it('GET /api/notifications should return paginated JSON', async () => {
     notificationService.getNotifications.mockResolvedValue({
       total: 1, limit: 50, offset: 0,
-      items: [{ id: '123', sent_at: 1, video_id: 'vid', short_message: { text: 'hi', rtl: false } }],
+      items: [{ id: '123', sent_at: 1, video_id: 'vid', message: 'hi' }],
     });
 
     const result = await controller.getNotifications(50, 0);
@@ -29,7 +29,7 @@ describe('NotificationController', () => {
   it('GET /api/notifications/latest should return newest item', async () => {
     notificationService.getNotifications.mockResolvedValue({
       total: 1, limit: 1, offset: 0,
-      items: [{ id: 'latest', sent_at: 1, video_id: null, short_message: { text: 'newest', rtl: false } }],
+      items: [{ id: 'latest', sent_at: 1, video_id: null, message: 'newest' }],
     });
 
     const result = await controller.getLatest();

@@ -17,7 +17,7 @@ export interface NotificationItem {
   post_id: string | null;
   linked_comment_id?: string;
   endpoint_url?: string;
-  short_message: { text: string; rtl?: boolean };
+  message: string;
   thumbnail_url: string | null;
   _url: string | null;
 }

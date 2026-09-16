@@ -54,8 +54,8 @@ describe('NotificationRepo', () => {
     mockRepo.find.mockResolvedValue([{ id: 'a' }]); // 'a' exists, 'b' is new
 
     const result = await repo.upsertAll([
-      { id: 'a', created_at: 1, sent_at: 1, short_message: { text: 'old', rtl: false } } as any,
-      { id: 'b', created_at: 2, sent_at: 2, short_message: { text: 'new', rtl: false } } as any,
+      { id: 'a', created_at: 1, sent_at: 1, message: 'old' } as any,
+      { id: 'b', created_at: 2, sent_at: 2, message: 'new' } as any,
     ]);
 
     expect(result).toEqual(['b']); // only 'b' is new
@@ -70,8 +70,8 @@ describe('NotificationRepo', () => {
   it('should return all IDs as new when no existing rows', async () => {
     mockRepo.find.mockResolvedValue([]);
     const result = await repo.upsertAll([
-      { id: 'x', created_at: 1, sent_at: 1, short_message: { text: '', rtl: false } } as any,
-      { id: 'y', created_at: 2, sent_at: 2, short_message: { text: '', rtl: false } } as any,
+      { id: 'x', created_at: 1, sent_at: 1, message: '' } as any,
+      { id: 'y', created_at: 2, sent_at: 2, message: '' } as any,
     ]);
     expect(result).toEqual(['x', 'y']);
   });

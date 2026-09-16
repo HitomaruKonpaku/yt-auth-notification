@@ -8,11 +8,11 @@ describe('Notification Entity', () => {
     notif.sent_at = Math.trunc(Number('123') / 1000);
     notif.video_id = 'vid';
     notif.endpoint_url = '/watch?v=vid';
-    notif.short_message = { text: "hi", rtl: false };
+    notif.message = 'hi';
     notif.thumbnail_url = 'https://img.jpg';
 
     expect(notif.id).toBe('123');
-    expect(notif.short_message).toEqual({ text: "hi", rtl: false });
+    expect(notif.message).toBe('hi');
     expect(notif.video_id).toBe('vid');
   });
 
@@ -21,7 +21,7 @@ describe('Notification Entity', () => {
     notif.id = '1';
     notif.created_at = 1000;
     notif.sent_at = 1;
-    notif.short_message = { text: "hi", rtl: false };
+    notif.message = 'hi';
 
     expect(notif.video_id).toBeUndefined();
     expect(notif.linked_comment_id).toBeUndefined();
